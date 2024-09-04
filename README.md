@@ -2,10 +2,24 @@
 
 <div align="center">
 
+![GitHub Action Status](https://github.com/krauters/github-notifier/workflows/Tests/badge.svg)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-GitHub%20Notifier-blue)](https://github.com/marketplace/actions/github-notifier-by-krauters)
+![License](https://img.shields.io/github/license/krauters/github-notifier)
+
+![Version](https://img.shields.io/github/v/release/krauters/github-notifier)
 [![npm version](https://img.shields.io/npm/v/@krauters/github-notifier.svg?style=flat-square)](https://www.npmjs.org/package/@krauters/github-notifier)
+![GitHub Stars](https://img.shields.io/github/stars/krauters/github-notifier)
+![Forks](https://img.shields.io/github/forks/krauters/github-notifier)
+
+![GitHub Issues](https://img.shields.io/github/issues/krauters/github-notifier)
+![Open PRs](https://img.shields.io/github/issues-pr/krauters/github-notifier)
+![Commits per Month](https://img.shields.io/github/commit-activity/m/krauters/github-notifier)
+![Contributors](https://img.shields.io/github/contributors/krauters/github-notifier)
+![Last Commit](https://img.shields.io/github/last-commit/krauters/github-notifier)
+
 [![install size](https://img.shields.io/badge/dynamic/json?url=https://packagephobia.com/v2/api.json?p=@krauters/github-notifier&query=$.install.pretty&label=install%20size&style=flat-square)](https://packagephobia.now.sh/result?p=@krauters/github-notifier)
-[![npm bundle size](https://img.shields.io/bundlephobia/minzip/@krauters/github-notifier?style=flat-square)](https://bundlephobia.com/package/@krauters/github-notifier@latest)
-[![npm downloads](https://img.shields.io/npm/dm/@krauters/github-notifier.svg?style=flat-square)](https://npm-stat.com/charts.html?package=@krauters/github-notifier)
+![Code Size](https://img.shields.io/github/languages/code-size/krauters/github-notifier)
+![Repo Size](https://img.shields.io/github/repo-size/krauters/github-notifier)
 
 </div>
 
