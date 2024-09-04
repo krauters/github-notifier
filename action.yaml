@@ -1,6 +1,20 @@
 name: GitHub Notifier by Krauters
 description: Send Github PR Notifications
 author: Colten Krauter
+
+branding:
+  icon: git-pull-request
+  color: '#4A154B'
+
+categories:
+  - Notifications
+  - ChatOps
+  - Pull Requests
+  - Slack
+  - DevOps
+
+license: ISC
+
 inputs:
   github-token:
     description: |
