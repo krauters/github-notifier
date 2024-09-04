@@ -1,7 +1,7 @@
 {
   "name": "@krauters/github-notifier",
   "description": "GitHub Notifier by Krauters – Post Open Pull Requests to Slack",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Colten Krauter",
   "type": "module",
   "homepage": "https://github.com/krauters/github-notifier",
@@ -20,7 +20,7 @@
     ".": "./dist/index.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=20"
   },
   "scripts": {
     "bundle": "npx ncc build src/index.ts -o dist --source-map",
