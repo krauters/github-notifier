@@ -15,6 +15,8 @@ Post Open Pull Requests to Slack.
 
 ![GitHub Notifier Example](./images/example.png)
 
+[Simple Usage Example](https://github.com/krauters/github-slack-notifier)
+
 **GitHub Notifier** is a _TypeScript_ [GitHub Action](https://docs.github.com/en/actions) that posts open pull requests to Slack channels based on a [scheduled job](https://crontab.guru/) to remind team members to review pull requests.
 
 ## Overview
