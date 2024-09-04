@@ -2,9 +2,11 @@
 
 <div align="center">
 
+<a href="https://www.linkedin.com/in/coltenkrauter/" target="_blank"><img src="https://img.shields.io/badge/LinkedIn-%230077B5.svg?&style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
 ![GitHub Action Status](https://github.com/krauters/github-notifier/workflows/Tests/badge.svg)
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-GitHub%20Notifier-blue)](https://github.com/marketplace/actions/github-notifier-by-krauters)
 ![License](https://img.shields.io/github/license/krauters/github-notifier)
+![visitors](https://visitor-badge.laobi.icu/badge?page_id=krauters.github-notifier)
 
 ![Version](https://img.shields.io/github/v/release/krauters/github-notifier)
 [![npm version](https://img.shields.io/npm/v/@krauters/github-notifier.svg?style=flat-square)](https://www.npmjs.org/package/@krauters/github-notifier)
@@ -114,3 +116,11 @@ The goal of this project is to continually evolve and improve its core features,
 ## License
 
 This project is licensed under the ISC License. Please see the [LICENSE](./LICENSE) file for more details.
+
+## 🥂 Thanks Contributors
+
+Thanks for spending time helping this project mature.
+
+<a href="https://github.com/krauters/github-notifier/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=krauters/github-notifier" />
+</a>
