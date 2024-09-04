@@ -4,7 +4,7 @@ author: Colten Krauter
 
 branding:
   icon: git-pull-request
-  color: '#4A154B'
+  color: yellow
 
 categories:
   - Notifications
