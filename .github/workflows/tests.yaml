@@ -1,0 +1,25 @@
+name: Tests
+run-name: Tests [${{ github.ref_name }}] triggered by [${{ github.event_name }}/${{ github.actor }}]
+
+on:
+  push:
+    branches: '*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test Action
+        uses: ./
+        with:
+          github-token: ${{ secrets.GH_TOKEN_GH_NOTIFIER }}
+          channels: C07L8EWB389
+          slack-token: ${{ secrets.SLACK_TOKEN_GH_NOTIFIER }}
+      - name: Print Output
+        run: echo "${{ steps.test-action.outputs.response }}"
