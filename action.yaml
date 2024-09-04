@@ -1,0 +1,62 @@
+name: GitHub Notifier by Krauters
+description: Send Github PR Notifications
+author: Colten Krauter
+inputs:
+  github-token:
+    description: |
+      Fine grained Github token with scopes,
+      - Administration:read (to list all repos in org)
+      - Pull Requests:read (to get PR details for repos)
+      - (Organzation) Members:read on all repos (to get GitHub email for Slack user matching)
+    required: true
+  slack-token:
+    required: true
+    description: |
+      Permissions to post to Slack and perform user lookups.
+      User OAuth Token with the following user token scopes,
+      - chat:write (to post message to Slack channels)
+      - users:read (to get user information for GitHub user matching)
+      - users:read.email (to get user emails for GitHub user matching)
+      - chat:write.customize (to allow the bot to customize the name and avatar)
+  channels:
+    required: true
+    description: Comma separated list of Slack channel_ids to post to.
+  with-test-data:
+    description: Append some test data to the Slack post.
+    required: false
+    default: false
+  with-archived:
+    description: Include pull requests from archived repositories in the org.
+    required: false
+    default: false
+  with-public:
+    description: |
+      Include pull requests from public repositories in the org. This is useful for the case where you've not
+      selected "All repositories" for your GitHub token and you don't want it to pull in the public ones.
+    required: false
+    default: true
+  with-drafts:
+    description: Include pull requests that are drafts in the org.
+    required: false
+    default: false
+  with-pull-report:
+    description: Include historical pull request report.
+    required: false
+    default: false
+  with-user-mentions:
+    description: Allow Slack user mentions.
+    required: false
+    default: true
+  repository-filter:
+    required: false
+    description: Comma separated list of repositories to scan.
+  base-url:
+    description: Point to different github instance such as https://api.github.com
+    required: false
+outputs:
+  response:
+    description: Slack response
+
+runs:
+  using: node20
+  main: dist/index.js

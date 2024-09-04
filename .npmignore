@@ -1,0 +1,9 @@
+build
+tests
+doc
+*.log
+*.tmp
+.vscode
+.github
+node_modules
+eslint.config.js
