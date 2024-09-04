@@ -115,14 +115,14 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 	let draftEmojiBlocks: (PlainTextElement | RichTextElement)[] = []
 
 	if (draft) {
-		draftEmojiBlocks = getEmojiBlocks('pr-draft')
+		draftEmojiBlocks = getEmojiBlocks('footprints')
 	}
 
 	const { approvals, approvalsRemaining, requiredReviewers, reviews } = reviewReport
 
 	// Let's not give a green checkmark unless there is at least 1 approval
 	if (approvalsRemaining === 0 && approvals && approvals > 0) {
-		approvedEmojiBlocks = getEmojiBlocks('tl_certified_green')
+		approvedEmojiBlocks = getEmojiBlocks('white_check_mark')
 		ageBasedEmoji = ''
 	}
 

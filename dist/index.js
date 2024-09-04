@@ -37649,7 +37649,7 @@ var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(5438);
 ;// CONCATENATED MODULE: ./package.json
-const package_namespaceObject = JSON.parse('{"u2":"@krauters/github-notifier","i8":"0.5.0","Xh":"https://github.com/krauters/github-notifier"}');
+const package_namespaceObject = JSON.parse('{"u2":"@krauters/github-notifier","i8":"0.5.1","Xh":"https://github.com/krauters/github-notifier"}');
 ;// CONCATENATED MODULE: ./src/defaults.ts
 const scmUrl = 'https://github.com';
 const prBaseUrl = `${scmUrl}/pulls?q=is%3Aopen+is%3Apr+archived%3Afalse+draft%3Afalse+user%3A`;
@@ -41915,12 +41915,12 @@ async function getPullBlocks(pull, slack, withUserMentions) {
     let approvedEmojiBlocks = [];
     let draftEmojiBlocks = [];
     if (draft) {
-        draftEmojiBlocks = getEmojiBlocks('pr-draft');
+        draftEmojiBlocks = getEmojiBlocks('footprints');
     }
     const { approvals, approvalsRemaining, requiredReviewers, reviews } = reviewReport;
     // Let's not give a green checkmark unless there is at least 1 approval
     if (approvalsRemaining === 0 && approvals && approvals > 0) {
-        approvedEmojiBlocks = getEmojiBlocks('tl_certified_green');
+        approvedEmojiBlocks = getEmojiBlocks('white_check_mark');
         ageBasedEmoji = '';
     }
     const context = [
