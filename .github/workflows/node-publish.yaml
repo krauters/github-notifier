@@ -1,0 +1,17 @@
+name: Node Publish
+run-name: Node Publish [${{ github.ref_name }}] triggered by [${{ github.event_name }}/${{ github.actor }}]
+
+on:
+  release:
+    types: published
+  push:
+    branches: '*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    uses: krauters/shared-workflows/.github/workflows/node-publish.yaml@main
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+    with:
+      dry_run: ${{ github.event_name != 'release' }}

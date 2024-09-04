@@ -1,0 +1,13 @@
+name: Node Release
+run-name: Node Release [${{ github.ref_name }}] triggered by [${{ github.event_name }}/${{ github.actor }}]
+
+on:
+  push:
+    branches: '*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    uses: krauters/shared-workflows/.github/workflows/node-release.yaml@main
+    secrets:
+      GH_TOKEN_RELEASES: ${{ secrets.GH_TOKEN_RELEASES }}

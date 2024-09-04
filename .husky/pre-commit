@@ -1,0 +1,11 @@
+#!/bin/sh
+
+npm run bundle
+
+if [ $? -ne 0 ]; then
+	echo "Command 'npm run bundle' failed"
+	exit 1
+fi
+
+echo "Adding dist folder to commit..."
+git add dist
