@@ -1,0 +1,39 @@
+name: Check Transpiled Code
+
+on:
+  push:
+    branches: '*'
+
+permissions:
+  contents: read
+
+jobs:
+  check-dist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Install Dependencies
+        run: npm ci
+        env:
+          # Classic token to read:packages
+          GH_TOKEN_FOR_NPM_READ: ${{ secrets.GH_TOKEN_FOR_PACKAGES }}
+
+      - name: Build the dist/ Directory
+        run: npm run bundle
+
+      - name: Deep compare directories
+        run: |
+          if [ "$(git diff --ignore-space-at-eol --text dist/ | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff --ignore-space-at-eol --text dist/
+            exit 1
+          fi
