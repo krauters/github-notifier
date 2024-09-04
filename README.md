@@ -66,9 +66,9 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
         steps:
         - uses: krauters/github-notifier@main
           with:
-            github-token: ${{ secrets.GH_TOKEN_FOR_GH_NOTIFIER }}
+            github-token: ${{ secrets.GH_TOKEN_GH_NOTIFIER }}
             channels: C07L8EWB389
-            slack-token: ${{ secrets.SLACK_TOKEN_FOR_GH_NOTIFIER }}
+            slack-token: ${{ secrets.SLACK_TOKEN_GH_NOTIFIER }}
             with-drafts: true
     ```
     To better understand the available inputs, you can check the [action definition file, action.yaml](./action.yaml).
