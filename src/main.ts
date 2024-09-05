@@ -17,7 +17,7 @@ export async function main(): Promise<void> {
 	const withArchived = getBooleanInput('with-archived')
 	const withPublic = getBooleanInput('with-public')
 	const withDrafts = getBooleanInput('with-drafts')
-	const withPullReport = getBooleanInput('with-pull-report')
+	const withPullReport = false // Not an active feature yet
 	const withUserMentions = getBooleanInput('with-user-mentions')
 	const repositoryFilter = stringToArray(getInput('repository-filter'))
 

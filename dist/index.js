@@ -37649,7 +37649,7 @@ var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(5438);
 ;// CONCATENATED MODULE: ./package.json
-const package_namespaceObject = JSON.parse('{"u2":"@krauters/github-notifier","i8":"0.7.0","Xh":"https://github.com/krauters/github-notifier"}');
+const package_namespaceObject = JSON.parse('{"u2":"@krauters/github-notifier","i8":"0.8.0","Xh":"https://github.com/krauters/github-notifier"}');
 ;// CONCATENATED MODULE: ./src/defaults.ts
 const scmUrl = 'https://github.com';
 const prBaseUrl = `${scmUrl}/pulls?q=is%3Aopen+is%3Apr+archived%3Afalse+draft%3Afalse+user%3A`;
@@ -42305,7 +42305,7 @@ async function main() {
     const withArchived = (0,core.getBooleanInput)('with-archived');
     const withPublic = (0,core.getBooleanInput)('with-public');
     const withDrafts = (0,core.getBooleanInput)('with-drafts');
-    const withPullReport = (0,core.getBooleanInput)('with-pull-report');
+    const withPullReport = false; // Not an active feature yet
     const withUserMentions = (0,core.getBooleanInput)('with-user-mentions');
     const repositoryFilter = stringToArray((0,core.getInput)('repository-filter'));
     // https://github.com/actions/github-script/issues/436
