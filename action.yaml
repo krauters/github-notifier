@@ -6,13 +6,6 @@ branding:
   icon: git-pull-request
   color: yellow
 
-categories:
-  - Notifications
-  - ChatOps
-  - Pull Requests
-  - Slack
-  - DevOps
-
 license: ISC
 
 inputs:
@@ -51,10 +44,6 @@ inputs:
     default: true
   with-drafts:
     description: Include pull requests that are drafts in the org.
-    required: false
-    default: false
-  with-pull-report:
-    description: Include historical pull request report.
     required: false
     default: false
   with-user-mentions:
