@@ -3,7 +3,7 @@ run-name: Node Release [${{ github.ref_name }}] triggered by [${{ github.event_n
 
 on:
   push:
-    branches: '*'
+    branches: 'main'
   workflow_dispatch:
 
 jobs:

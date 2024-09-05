@@ -41,33 +41,39 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
 
 ## Quick start
 
-1. (Optional) Create a repository called `github-notifier`
-    1. Whatever repository that you use to host this workflow template must be able to use GitHub Runners.
-1. [Create a GitHub token](https://github.com/settings/tokens?type=beta)
-    ```md
-    // GitHub Token requirements
+1. (Optional) Start by creating a repository called `github-notifier`.
+    1. Whatever repo you use to host this workflow needs to be able to use GitHub Runners.
+1. [Generate a GitHub token](https://github.com/settings/tokens?type=beta) – You’ll need a fine-grained GitHub token that allows access to either all your repositories or just the ones you want notifications about.
 
-    Fine grained Github token with scopes for **all repositories** (Or a subset of repositories that you want included in the notification),
-    - (Resource Owner should be the org that contains the pertinent repositories/pull-requests – Requires an org owner to create it)
-    - (Repository) Administration:read (to list all repos in org)
-    - (Repository) Pull Requests:read (to get PR details for repos)
-    - (Repository) Contents:read (to get branch protections)
-    - (Organization) Members:read on all repos (to get GitHub email for Slack user matching)
-    ```
-    1. Save the token value to the repository > `Settings` > `Secrets and variables` > `Actions` > `New repository secret` with suggested name **GH_TOKEN_GH_NOTIFIER**
-1. [Create a Slack App](https://api.slack.com/apps) _from scratch_ with the name `GitHub Notifier` (ex: `GitHub Notifier`) and add it to your Slack workspace.
-    1. On the **OAuth & Permissions** page, add scopes,
-    ```md
-    Bot User OAuth Token with the following bot token scopes,
-    - chat:write (to post message to Slack channels)
-    - users:read (to get user information for GitHub user matching)
-    - users:read.email (to get user emails for GitHub user matching)
-    - chat:write.customize (to allow the bot to customize the name and avatar)
-    ```
-    1. On the **OAuth & Permissions** page, `Install To Workspace` and then copy the `User OAuth Token`
-    1. Save the token value to the repository > `Settings` > `Secrets and variables` > `Actions` > `New repository secret` with suggested name **SLACK_TOKEN_GH_NOTIFIER**
-    1. Add the Slack app that you created to the pertinent Slack channel/s and grab the channel id/s for the workflow.
-1. Create a workflow similar to the following,
+    Here are the specific permissions the token needs:
+
+    - **Repository Administration: read** – This lets the token list repositories within the organization.
+    - **Repository Pull Requests: read** – Required to fetch details about pull requests.
+    - **Repository Contents: read** – Allows the token to check the status of repository branch protections.
+    - **Organization Members: read** – Required to retrieve GitHub email addresses for matching them with Slack users.
+
+    Make sure the token is created by an organization owner, as it must belong to the organization where the relevant repositories and pull requests live.
+
+
+    1. Save the token in your repository by going to `Settings` > `Secrets and variables` > `Actions` > `New repository secret`, and name it **GH_TOKEN_GH_NOTIFIER**.
+
+1. [Create a Slack App](https://api.slack.com/apps) either _from scratch_ or by using a pre-defined [manifest file](./manafest.json).
+
+    - To create from scratch: Start a new app called `GitHub Notifier` and add it to your Slack workspace.
+    - To use the manifest: On the Slack App creation page, select "From an app manifest" and upload your `manifest.json` file to quickly set up the app.
+
+    1. On the **OAuth & Permissions** page, assign the following scopes to the bot,
+
+        - **chat:write** – So the bot can post messages in Slack channels.
+        - **users:read** – To look up Slack users for matching with GitHub accounts.
+        - **users:read.email** – Allows the bot to retrieve Slack user emails for matching with GitHub accounts.
+        - **chat:write.customize** – This enables the bot to modify its display name and avatar when posting.
+
+    1. On the **OAuth & Permissions** page, click `Install To Workspace`, then copy the `User OAuth Token`.
+    1. Save this token in your repository at `Settings` > `Secrets and variables` > `Actions` > `New repository secret`, naming it **SLACK_TOKEN_GH_NOTIFIER**.
+    1. Add the Slack app you just created to the relevant Slack channel(s) and note down the channel IDs for the workflow.
+
+1. Set up a workflow similar to this:
     ```yaml
     # .github/workflows/github-notifier.yaml
 
@@ -75,8 +81,8 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
 
     on:
       schedule:
-      - cron: "0 15,17,19,21,23 * * 1-5"
-        workflow_dispatch:
+      - cron: 0 15,17,19,21,23 * * 1-5
+      workflow_dispatch:
 
     jobs:
       github-notifier:
@@ -87,9 +93,26 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
             github-token: ${{ secrets.GH_TOKEN_GH_NOTIFIER }}
             channels: C07L8EWB389
             slack-token: ${{ secrets.SLACK_TOKEN_GH_NOTIFIER }}
-            with-drafts: true
     ```
-    To better understand the available inputs, you can check the [action definition file, action.yaml](./action.yaml).
+    
+    For more details about available inputs, you can check out the [action definition file, action.yaml](./action.yaml).
+
+## Input Variables
+
+See [action.yaml](./action.yaml) for more detailed information.
+
+| Name                  | Description                                                                                 | Required | Default  |
+|-----------------------|---------------------------------------------------------------------------------------------|----------|----------|
+| `github-token`        | Fine-grained GitHub token with necessary scopes for administration, PR details, and members.| Yes      |          |
+| `slack-token`         | Permissions to post to Slack and perform user lookups.                                       | Yes      |          |
+| `channels`            | Comma-separated list of Slack channel IDs to post to.                                        | Yes      |          |
+| `with-test-data`      | Append test data to the Slack post.                                                          | No       | `false`  |
+| `with-archived`       | Include PRs from archived repositories.                                                      | No       | `false`  |
+| `with-public`         | Include PRs from public repositories.                                                        | No       | `true`   |
+| `with-drafts`         | Include draft PRs.                                                                           | No       | `false`  |                   | No       | `false`  |
+| `with-user-mentions`  | Allow Slack user mentions.                                                                   | No       | `true`   |
+| `repository-filter`   | Comma-separated list of repositories to scan.                                                | No       |          |
+| `base-url`            | Base GitHub API URL (e.g., https://api.github.com).                                          | No       |          |
 
 ## Troubleshooting
 
@@ -97,17 +120,18 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
 Error: An API error occurred: channel_not_found
 ```
 
-This error indicates that you likely didn't add the Slack App that you made to the Slack channel
 
-## Husky & Pre-Commit Hooks
+This error means the Slack app probably wasn’t added to the channel you’re trying to post in.
 
-Husky simplifies Git hooks management, automating tasks like code checks before a commit. It's set up to run specified commands (like tests or lints) pre-commit, ensuring code quality and consistency.
+## Husky
 
-Pre-commit hooks are automated scripts that run before each commit is completed, designed to catch errors or enforce project standards. With Husky, setting up and managing these hooks across the team is straightforward, helping maintain a clean codebase.
+Husky helps manage Git hooks easily, automating things like running tests or linting before a commit is made. This ensures your code is in good shape.
+
+Pre-commit hooks run scripts before a commit is finalized to catch issues or enforce standards. With Husky, setting up these hooks across your team becomes easy, keeping your codebase clean and consistent.
 
 ### Our Custom Pre-Commit Hook
 
-This project uses a custom pre-commit hook to run `npm run bundle`, ensuring that our bundled assets are always up to date before a commit (this is required for TypeScript GitHub Actions). By automating this with Husky, we ensure that no commit goes through without a fresh bundle, maintaining the integrity and efficiency of our codebase.
+This project uses a custom pre-commit hook to run `npm run bundle`. This ensures that our bundled assets are always up to date before any commit (which is especially important for TypeScript GitHub Actions). Husky automates this, so no commits will go through without a fresh bundle, keeping everything streamlined.
 
 ## Contributing
 
@@ -119,7 +143,7 @@ This project is licensed under the ISC License. Please see the [LICENSE](./LICEN
 
 ## 🥂 Thanks Contributors
 
-Thanks for spending time helping this project mature.
+Thanks for spending time on this project.
 
 <a href="https://github.com/krauters/github-notifier/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=krauters/github-notifier" />
