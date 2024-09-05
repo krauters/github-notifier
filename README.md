@@ -106,7 +106,6 @@ See [action.yaml](./action.yaml) for more detailed information.
 | `github-token`        | Fine-grained GitHub token with necessary scopes for administration, PR details, and members.| Yes      |          |
 | `slack-token`         | Permissions to post to Slack and perform user lookups.                                       | Yes      |          |
 | `channels`            | Comma-separated list of Slack channel IDs to post to.                                        | Yes      |          |
-| `with-test-data`      | Append test data to the Slack post.                                                          | No       | `false`  |
 | `with-archived`       | Include PRs from archived repositories.                                                      | No       | `false`  |
 | `with-public`         | Include PRs from public repositories.                                                        | No       | `true`   |
 | `with-drafts`         | Include draft PRs.                                                                           | No       | `false`  |                   | No       | `false`  |
@@ -148,3 +147,11 @@ Thanks for spending time on this project.
 <a href="https://github.com/krauters/github-notifier/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=krauters/github-notifier" />
 </a>
+
+## References to this project
+
+- [Stack Overflow / Customizing slack notification for Github pull requests](https://stackoverflow.com/questions/66948900/customizing-slack-notification-for-github-pull-requests/78949579#78949579)
+
+- [Reddit / Recommended slack app to post github pull requests notifications?](https://www.reddit.com/r/Slack/comments/1e3pdfr/comment/llhfu11/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)
+
+- [GitHub Discussions / Best way to send slack to developers notifications daily about new PRs, new issues or new comments?](https://github.com/orgs/community/discussions/70288)
