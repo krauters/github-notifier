@@ -1,10 +1,10 @@
 name: GitHub Notifier by Krauters
-description: Send Github PR Notifications
+description: Send Elegant Github PR Notifications
 author: Colten Krauter
 
 branding:
-  icon: git-pull-request
-  color: yellow
+  icon: bell
+  color: orange
 
 license: ISC
 
