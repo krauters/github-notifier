@@ -8,7 +8,7 @@ export type Context = typeof context
 
 export type GitHubClient = InstanceType<typeof GitHub>
 
-const octokit = new Octokit()
+export const octokit = new Octokit()
 
 export type GitHubRepositories = GetType<typeof octokit.repos.listForOrg>
 export type GitHubRepository = GitHubRepositories[number]

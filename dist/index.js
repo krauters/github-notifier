@@ -37744,6 +37744,7 @@ function* generateBatches(items, size = 50) {
         yield items.slice(i, i + size);
     }
 }
+// Todo - Move this to shared utils.
 const snapActions = {
     [SnapType.Day]: (date) => {
         date.setHours(0, 0, 0, 0);
@@ -41463,6 +41464,7 @@ var PullState;
 })(PullState || (PullState = {}));
 
 ;// CONCATENATED MODULE: ./src/utils/github/github-client.ts
+/* eslint-disable @typescript-eslint/naming-convention */
 
 
 
@@ -41574,10 +41576,12 @@ class GitHubClient {
                 };
             }
             const minutesUntilMerged = minutesBetweenDates(pull.createdAt, pull.mergedAt);
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
             minutesUntilMerged && report[key].minutesUntilMerged.push(minutesUntilMerged / 60);
             const minutesUntilFirstReview = firstReview
                 ? minutesBetweenDates(pull.createdAt, new Date(String(firstReview.submitted_at)))
                 : undefined;
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
             minutesUntilFirstReview && report[key].minutesUntilFirstReview.push(minutesUntilFirstReview / 60);
         }
         let reportString = 'GitHub Notifier Pull Report (Averages)\n';
@@ -41921,6 +41925,7 @@ function getContextMarkdownBlock(text, withIndentation = false) {
  * @param {boolean} withUserMentions - Whether or not to mention Slack users.
  * @returns {Promise<KnownBlock[]>}
  */
+// eslint-disable-next-line max-lines-per-function
 async function getPullBlocks(pull, slack, withUserMentions) {
     const { age, ageInHours, commits, draft, filesAndChanges, number, repo, repoUrl, requestedReviewers, reviewReport, title, url, } = pull;
     let ageBasedEmoji = getAgeBasedEmoji(ageInHours);
@@ -41975,6 +41980,7 @@ async function getPullBlocks(pull, slack, withUserMentions) {
         const slackUserIdsOrLogins = [];
         for (const username of requestedReviewers) {
             const slackUser = await slack.getSlackUser({ username });
+            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
             slackUserIdsOrLogins.push((withUserMentions && slackUser?.id && `<@${slackUser.id}>`) || username);
         }
         contextBlocks.unshift(...getContextMarkdownBlock(formatStringList(slackUserIdsOrLogins) +
@@ -42147,7 +42153,10 @@ class SlackClient {
                 return user?.id === userId;
             }
             const profile = user.profile;
-            return ((email && profile?.email === email) ||
+            return (
+            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+            (email && profile?.email === email) ||
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 String(profile?.email).includes(username) ||
                 profile?.display_name === username ||
                 profile?.real_name === username);
@@ -42189,9 +42198,7 @@ class SlackClient {
 ;// CONCATENATED MODULE: ./src/utils/test-data.ts
 
 
-/**
- * Get approved pull request as test data.
- */
+// eslint-disable-next-line jsdoc/require-jsdoc
 function getApprovedPullRequest() {
     console.log(`Getting test data for user [${github.context.actor}]`);
     return {
@@ -42317,7 +42324,7 @@ async function main() {
     const withArchived = (0,core.getBooleanInput)('with-archived');
     const withPublic = (0,core.getBooleanInput)('with-public');
     const withDrafts = (0,core.getBooleanInput)('with-drafts');
-    const withPullReport = false; // Not an active feature yet
+    const withPullReport = false;
     const withUserMentions = (0,core.getBooleanInput)('with-user-mentions');
     const repositoryFilter = stringToArray((0,core.getInput)('repository-filter'));
     // https://github.com/actions/github-script/issues/436
