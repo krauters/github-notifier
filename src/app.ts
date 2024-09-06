@@ -7,7 +7,7 @@ import { context } from '@actions/github'
 import type { RunProps } from './structures.js'
 
 import { homepage, name, version } from '../package.json'
-import { workflowLogsUrl, workflowPath, workflowUrl } from './defaults.js'
+import { workflowLogsUrl, workflowUrl } from './defaults.js'
 import { GitHubClient } from './utils/github/github-client.js'
 import { PullState, RepositoryType } from './utils/github/structures.js'
 import { adjustDate, formatStringList, plural } from './utils/misc.js'

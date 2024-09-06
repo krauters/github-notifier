@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import { getOctokit } from '@actions/github'
 
 import { ignoreFilenamesForChanges } from '../../defaults.js'
@@ -157,11 +158,13 @@ export class GitHubClient {
 			}
 
 			const minutesUntilMerged = minutesBetweenDates(pull.createdAt, pull.mergedAt)
+			// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 			minutesUntilMerged && report[key].minutesUntilMerged.push(minutesUntilMerged / 60)
 
 			const minutesUntilFirstReview = firstReview
 				? minutesBetweenDates(pull.createdAt, new Date(String(firstReview.submitted_at)))
 				: undefined
+			// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 			minutesUntilFirstReview && report[key].minutesUntilFirstReview.push(minutesUntilFirstReview / 60)
 		}
 

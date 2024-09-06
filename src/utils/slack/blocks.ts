@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import type { KnownBlock, PlainTextElement, RichTextElement } from '@slack/web-api'
 
 import type { Pull } from '../github/structures.js'
@@ -95,6 +96,7 @@ export function getContextMarkdownBlock(text: string, withIndentation = false): 
  * @param {boolean} withUserMentions - Whether or not to mention Slack users.
  * @returns {Promise<KnownBlock[]>}
  */
+// eslint-disable-next-line max-lines-per-function
 export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMentions: boolean): Promise<KnownBlock[]> {
 	const {
 		age,
@@ -170,6 +172,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 		const slackUserIdsOrLogins: string[] = []
 		for (const username of requestedReviewers) {
 			const slackUser = await slack.getSlackUser({ username })
+			// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 			slackUserIdsOrLogins.push((withUserMentions && slackUser?.id && `<@${slackUser.id}>`) || username)
 		}
 		contextBlocks.unshift(

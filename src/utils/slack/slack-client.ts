@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import type { Block, BotsInfoResponse } from '@slack/web-api'
 import type { Bot } from '@slack/web-api/dist/types/response/BotsInfoResponse.js'
 import type { Member, Profile } from '@slack/web-api/dist/types/response/UsersListResponse.js'
@@ -112,7 +113,9 @@ export class SlackClient {
 			const profile: Profile | undefined = user.profile
 
 			return (
+				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 				(email && profile?.email === email) ||
+				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 				String(profile?.email).includes(username!) ||
 				profile?.display_name === username ||
 				profile?.real_name === username

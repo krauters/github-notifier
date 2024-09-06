@@ -1,3 +1,4 @@
+/* eslint-disable jsdoc/require-jsdoc */
 import type { AdjustDateProps } from './structures.js'
 
 import { SnapType } from './structures.js'
@@ -70,6 +71,7 @@ export function* generateBatches<T>(items: T[], size = 50) {
 	}
 }
 
+// Todo - Move this to shared utils.
 const snapActions = {
 	[SnapType.Day]: (date: Date) => {
 		date.setHours(0, 0, 0, 0)

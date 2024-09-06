@@ -1,7 +1,7 @@
 {
   "name": "@krauters/github-notifier",
   "description": "GitHub Notifier by Krauters – Post Open Pull Requests to Slack",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "author": "Colten Krauter",
   "type": "module",
   "homepage": "https://github.com/krauters/github-notifier",
@@ -23,11 +23,14 @@
     "node": ">=20"
   },
   "scripts": {
-    "bundle": "npx ncc build src/index.ts -o dist --source-map",
+    "all": "npm run test && npm run package",
     "bundle:watch": "npm run bundle -- --watch",
-    "upgrade:all": "npx npm-check-updates -u && npm install",
-    "all": "npm run package",
-    "prepare": "husky || true"
+    "bundle": "npx ncc build src/index.ts -o dist --source-map",
+    "fix": "npm run lint -- --fix",
+    "lint": "npx eslint src/**",
+    "prepare": "husky || true",
+    "test": "npm run lint",
+    "upgrade:all": "npx npm-check-updates -u && npm install"
   },
   "license": "ISC",
   "dependencies": {
@@ -39,6 +42,7 @@
     "simple-git": "^3.26.0"
   },
   "devDependencies": {
+    "@krauters/eslint-config": "^0.1.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.5.4",
     "@vercel/ncc": "^0.38.1",
@@ -47,6 +51,7 @@
     "make-coverage-badge": "^1.2.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.4.0"
   }
 }
