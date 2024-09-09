@@ -37661,7 +37661,7 @@ var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(5438);
 ;// CONCATENATED MODULE: ./package.json
-const package_namespaceObject = JSON.parse('{"u2":"@krauters/github-notifier","i8":"0.11.0","Xh":"https://github.com/krauters/github-notifier"}');
+const package_namespaceObject = JSON.parse('{"u2":"@krauters/github-notifier","i8":"0.12.0","Xh":"https://github.com/krauters/github-notifier"}');
 ;// CONCATENATED MODULE: ./src/defaults.ts
 const scmUrl = 'https://github.com';
 const prBaseUrl = `${scmUrl}/pulls?q=is%3Aopen+is%3Apr+archived%3Afalse+draft%3Afalse+user%3A`;
@@ -42182,13 +42182,15 @@ class SlackClient {
                 const payload = {
                     blocks: batch,
                     channel,
-                    icon_emoji: ':github_octocat:',
+                    icon_url: 'https://github.com/krauters/github-notifier/blob/images/images/teddy-cat-square.png?raw=true',
+                    // icon_emoji: ':github_octocat:',
                     text,
                     unfurl_links: false,
                     unfurl_media: false,
                     username: 'GitHub Notifier',
                 };
                 const response = await this.client.chat.postMessage(payload);
+                console.dir(response, { depth: null });
                 console.log(`Posted batch [${batchNumber++}] to Slack channel [${channel}] with success [${response.ok}]`);
             }
         }
