@@ -146,7 +146,10 @@ export class SlackClient {
 				const payload = {
 					blocks: batch,
 					channel,
-					icon_emoji: ':github_octocat:',
+					icon_url:
+						'https://github.com/krauters/github-notifier/blob/images/images/teddy-cat-square.png?raw=true',
+
+					// icon_emoji: ':github_octocat:',
 					text,
 					unfurl_links: false,
 					unfurl_media: false,
@@ -154,6 +157,7 @@ export class SlackClient {
 				}
 
 				const response = await this.client.chat.postMessage(payload)
+				console.dir(response, { depth: null })
 				console.log(
 					`Posted batch [${batchNumber++}] to Slack channel [${channel}] with success [${response.ok}]`,
 				)
