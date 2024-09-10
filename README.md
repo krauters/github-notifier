@@ -155,3 +155,7 @@ Thanks for spending time on this project.
 - [Reddit / Recommended slack app to post github pull requests notifications?](https://www.reddit.com/r/Slack/comments/1e3pdfr/comment/llhfu11/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)
 
 - [GitHub Discussions / Best way to send slack to developers notifications daily about new PRs, new issues or new comments?](https://github.com/orgs/community/discussions/70288)
+
+<br />
+<br />
+<a href="https://www.buymeacoffee.com/coltenkrauter"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=coltenkrauter&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
