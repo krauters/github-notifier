@@ -32,5 +32,6 @@ jobs:
           github-token: ${{ secrets.GH_TOKEN_GH_NOTIFIER }}
           channels: C07L8EWB389
           slack-token: ${{ secrets.SLACK_TOKEN_GH_NOTIFIER }}
+          with-test-data: true
       - name: Print Output
         run: echo "${{ steps.test-action.outputs.response }}"

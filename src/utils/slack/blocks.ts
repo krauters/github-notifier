@@ -145,7 +145,8 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 			username,
 		})
 
-		const displayName = slackUser?.profile?.display_name
+		// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+		const displayName = slackUser?.profile?.display_name || slackUser?.profile?.real_name_normalized || username
 		const imageUrl = slackUser?.profile?.image_72
 
 		contextBlocks.push({
@@ -160,7 +161,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 					type: 'image',
 				},
 				{
-					text: `*${displayName ?? username}* ${context} _${relativeHumanReadableAge}_.`,
+					text: `*${displayName}* ${context} _${relativeHumanReadableAge}_.`,
 					type: 'mrkdwn',
 				},
 			],

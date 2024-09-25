@@ -37661,7 +37661,7 @@ var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(5438);
 ;// CONCATENATED MODULE: ./package.json
-const package_namespaceObject = JSON.parse('{"u2":"@krauters/github-notifier","i8":"0.13.0","Xh":"https://github.com/krauters/github-notifier"}');
+const package_namespaceObject = JSON.parse('{"u2":"@krauters/github-notifier","i8":"0.13.1","Xh":"https://github.com/krauters/github-notifier"}');
 ;// CONCATENATED MODULE: ./src/defaults.ts
 const scmUrl = 'https://github.com';
 const prBaseUrl = `${scmUrl}/pulls?q=is%3Aopen+is%3Apr+archived%3Afalse+draft%3Afalse+user%3A`;
@@ -41955,7 +41955,8 @@ async function getPullBlocks(pull, slack, withUserMentions) {
             email,
             username,
         });
-        const displayName = slackUser?.profile?.display_name;
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+        const displayName = slackUser?.profile?.display_name || slackUser?.profile?.real_name_normalized || username;
         const imageUrl = slackUser?.profile?.image_72;
         contextBlocks.push({
             elements: [
@@ -41969,7 +41970,7 @@ async function getPullBlocks(pull, slack, withUserMentions) {
                     type: 'image',
                 },
                 {
-                    text: `*${displayName ?? username}* ${context} _${relativeHumanReadableAge}_.`,
+                    text: `*${displayName}* ${context} _${relativeHumanReadableAge}_.`,
                     type: 'mrkdwn',
                 },
             ],
