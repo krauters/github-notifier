@@ -4,9 +4,9 @@ import type { Bot } from '@slack/web-api/dist/types/response/BotsInfoResponse.js
 import type { Member, Profile } from '@slack/web-api/dist/types/response/UsersListResponse.js'
 import type { User } from '@slack/web-api/dist/types/response/UsersLookupByEmailResponse.js'
 
+import { getBatches } from '@krauters/utils'
 import { WebClient } from '@slack/web-api'
 
-import { generateBatches } from '../misc.js'
 import { type GetUser, SlackAppUrl, type SlackClientProps } from './structures.js'
 
 export class SlackClient {
@@ -17,8 +17,9 @@ export class SlackClient {
 
 	/**
 	 * Slack client for interacting with the Slack API.
-	 * @param {string} token - Slack token.
-	 * @param {string[]} channels - Slack channel IDs for posting messages in.
+	 *
+	 * @param token Slack token.
+	 * @param channels Slack channel IDs for posting messages in.
 	 */
 	constructor({ channels, token }: SlackClientProps) {
 		this.client = new WebClient(token)
@@ -27,8 +28,8 @@ export class SlackClient {
 
 	/**
 	 * Ensure app name pattern.
-	 * @param {RegExp} pattern - The pattern to require the bot name to adhere to.
-	 * @returns {Promise<void>}
+	 *
+	 * @param pattern The pattern to require the bot name to adhere to.
 	 */
 	async enforceAppNamePattern(pattern: RegExp): Promise<void> {
 		const info = await this.getBotInfo()
@@ -48,7 +49,6 @@ export class SlackClient {
 
 	/**
 	 * Get all Slack users.
-	 * @returns {Promise<Member[]>}
 	 */
 	async getAllusers(): Promise<Member[]> {
 		this.users = []
@@ -77,7 +77,6 @@ export class SlackClient {
 
 	/**
 	 * Get Slack app information for current app.
-	 * @returns {void}
 	 */
 	async getBotInfo(): Promise<BotsInfoResponse> {
 		try {
@@ -96,10 +95,10 @@ export class SlackClient {
 
 	/**
 	 * Get a Slack user object based on matching email or username.
-	 * @param {string | undefined} email - An email address that hopefully as matched to a Slack user account.
-	 * @param {string} username - An email address that hopefully as matched to a Slack user account.
-	 * @param {string} [botId] - The botId for the bot to find.
-	 * @returns {Promise<Member | undefined>}
+	 *
+	 * @param email An email address that hopefully as matched to a Slack user account.
+	 * @param username An email address that hopefully as matched to a Slack user account.
+	 * @param [botId] The botId for the bot to find.
 	 */
 	async getSlackUser({ email, userId, username }: GetUser): Promise<Member | undefined> {
 		console.log(`Getting Slack UserId for email [${email}], username [${username}], and userId [${userId}]...`)
@@ -133,18 +132,18 @@ export class SlackClient {
 
 	/**
 	 * Post a message with blocks to Slack channels.
-	 * @param {string} text - The message to post.
-	 * @param {KnownBlocks[]} blocks - Slack blocks to post.
-	 * @param {string[]} [channels=this.channels] - Channels to post to.
-	 * @returns {Promise<void>}
+	 *
+	 * @param text The message to post.
+	 * @param blocks Slack blocks to post.
+	 * @param [channels=this.channels] Channels to post to.
 	 */
 	async postMessage(text: string, blocks: Block[], channels = this.channels): Promise<void> {
 		for (const channel of channels) {
 			let batchNumber = 0
-			for (const batch of generateBatches(blocks)) {
+			for (const batch of getBatches(blocks)) {
 				console.log(`Posting batch [${batchNumber++}] to Slack channel [${channel}]...`)
 				const payload = {
-					blocks: batch,
+					blocks: batch.items,
 					channel,
 					icon_url:
 						'https://github.com/krauters/github-notifier/blob/images/images/teddy-cat-square.png?raw=true',
@@ -155,7 +154,7 @@ export class SlackClient {
 					unfurl_media: false,
 					username: 'GitHub Notifier',
 				}
-
+				console.dir(payload, { depth: null })
 				const response = await this.client.chat.postMessage(payload)
 				console.dir(response, { depth: null })
 				console.log(

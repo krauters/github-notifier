@@ -1,11 +1,10 @@
 import { debug, getBooleanInput, getInput } from '@actions/core'
+import { stringToArray } from '@krauters/utils'
 
 import { run } from './app.js'
-import { stringToArray } from './utils/misc.js'
 
 /**
  * The main function that gets executed when the action is run.
- * @returns {undefined}
  */
 export async function main(): Promise<void> {
 	debug('Starting main...')
