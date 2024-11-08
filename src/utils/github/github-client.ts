@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { getOctokit } from '@actions/github'
+import { average, getHoursAgo, minutesBetweenDates, snapDate, SnapType } from '@krauters/utils'
 
 import { ignoreFilenamesForChanges } from '../../defaults.js'
-import { adjustDate, average, getHoursAgo, getRelativeHumanReadableAge, minutesBetweenDates } from '../misc.js'
-import { SnapType } from '../structures.js'
+import { getRelativeHumanReadableAge } from '../misc.js'
 import {
 	type FilesAndChanges,
 	type GetCommitsProps,
@@ -37,7 +37,8 @@ export class GitHubClient {
 
 	/**
 	 * A GitHub client for interacting with a GitHub API.
-	 * @param {GitHubClientProps} props - Properties toi configure GitHub client.
+	 *
+	 * @param props Properties toi configure GitHub client.
 	 */
 	constructor({ options = {}, token }: GitHubClientProps) {
 		this.client = getOctokit(token, options)
@@ -45,8 +46,8 @@ export class GitHubClient {
 
 	/**
 	 * Get commits in a pull.
-	 * @param {GetCommitsProps} props - Properties for which commit to get.
-	 * @returns {Promise<GitHubPullCommits>}
+	 *
+	 * @param props Properties for which commit to get.
 	 */
 	async getCommits({ number, repo }: GetCommitsProps): Promise<GitHubPullCommits> {
 		return await this.client.paginate(this.client.rest.pulls.listCommits, {
@@ -58,8 +59,8 @@ export class GitHubClient {
 
 	/**
 	 * Get a GitHub user's email address from a username.
-	 * @param {string} username - A GitHub username.
-	 * @returns {Promise<string | undefined>}
+	 *
+	 * @param username A GitHub username.
 	 */
 	async getEmail(username: string): Promise<string | undefined> {
 		console.log(`Getting email from GitHub for username [${username}]...`)
@@ -72,8 +73,8 @@ export class GitHubClient {
 
 	/**
 	 * Get the number of changes for a given pull.
-	 * @param {GetFilesAndChangesProps} props - Properties for which files and changes to get.
-	 * @returns {Promise<FilesAndChanges>}
+	 *
+	 * @param props Properties for which files and changes to get.
 	 */
 	async getFilesAndChanges({ number, repo }: GetFilesAndChangesProps): Promise<FilesAndChanges> {
 		const { data: fileList } = await this.client.rest.pulls.listFiles({
@@ -97,7 +98,6 @@ export class GitHubClient {
 
 	/**
 	 * Get organization associated with current token.
-	 * @returns {Promise<Organization>}
 	 */
 	async getOrg(): Promise<Organization> {
 		if (!this.cacheOrganization) {
@@ -126,7 +126,6 @@ export class GitHubClient {
 
 	/**
 	 * Get organization name associated with current token.
-	 * @returns {Promise<string>}
 	 */
 	async getOrgName(): Promise<string> {
 		return (await this.getOrg()).name
@@ -134,8 +133,8 @@ export class GitHubClient {
 
 	/**
 	 * Get a pull report.
-	 * @param {Pull[]} pulls - Pulls against which a report will be generated.
-	 * @returns {unknown}
+	 *
+	 * @param pulls Pulls against which a report will be generated.
 	 */
 	getPullReport(pulls: Pull[]) {
 		const report: Record<string, ReportItem> = {}
@@ -183,11 +182,11 @@ export class GitHubClient {
 
 	/**
 	 * Get all pulls in the GitHub org.
-	 * @param {GetPullsProps} props - Properties for which pulls to get.
-	 * @returns {Promise<Pull[]>}
+	 *
+	 * @param props Properties for which pulls to get.
 	 */
 	async getPulls({
-		oldest = adjustDate({ months: -6, snap: SnapType.Month }),
+		oldest = snapDate(new Date(), { months: -6, snap: SnapType.Month }),
 		onlyGhReviews = false,
 		repositories,
 		state = PullState.All,
@@ -283,10 +282,9 @@ export class GitHubClient {
 	}
 
 	/**
-	 *
 	 * Get repositories in the GitHub org that the token has access to.
-	 * @param {GetRepositoriesProps} props - Properties for which repositories to get.
-	 * @returns {Promise<GitHubRepositories>}
+	 *
+	 * @param props Properties for which repositories to get.
 	 */
 	async getRepositories({
 		repositoryFilter = [],
@@ -322,9 +320,9 @@ export class GitHubClient {
 
 	/**
 	 * Get requested reviewers in a pull.
-	 * @param {string} repo - The repository associated with the pull.
-	 * @param {number} number - The pull number.
-	 * @returns {Promise<GitHubPullRequestedReviewers>}
+	 *
+	 * @param repo The repository associated with the pull.
+	 * @param number The pull number.
 	 */
 	async getRequestedReviewers(repo: string, number: number): Promise<GitHubPullRequestedReviewers> {
 		const response = await this.client.rest.pulls.listRequestedReviewers({
@@ -338,9 +336,9 @@ export class GitHubClient {
 
 	/**
 	 * Get the required number of reviewers for a branch based on branch rules.
-	 * @param {string} repo - The repository to get branch rules for.
-	 * @param {string} branchName - The branch to get branch rules for.
-	 * @returns {Promise<number>}
+	 *
+	 * @param repo The repository to get branch rules for.
+	 * @param branchName The branch to get branch rules for.
 	 */
 	async getRequiredReviewers(repo: string, branchName: string): Promise<number> {
 		const org = await this.getOrgName()
@@ -392,12 +390,12 @@ export class GitHubClient {
 
 	/**
 	 * Get a report of the pull reviews.
-	 * @param {string} repo - The repository associated with the pull.
-	 * @param {number} number - The pull number.
-	 * @param {string} baseRef - The base ref of the pull.
-	 * @param {stringp[]} requestedReviewers - A list of requested reviewer logins.
-	 * @param {boolean} [onlyGhReviews] - Only return Github review data in the report.
-	 * @returns {Promise<ReviewReport>}
+	 *
+	 * @param repo The repository associated with the pull.
+	 * @param number The pull number.
+	 * @param baseRef The base ref of the pull.
+	 * @param requestedReviewers A list of requested reviewer logins.
+	 * @param [onlyGhReviews] Only return Github review data in the report.
 	 */
 	async getReviewReport(
 		repo: string,
@@ -481,8 +479,8 @@ export class GitHubClient {
 
 	/**
 	 * Get a GitHub user object from a username.
-	 * @param {string} username - A GitHub username.
-	 * @returns {Promise<GitHubUser>}
+	 *
+	 * @param username A GitHub username.
 	 */
 	async getUser(username: string): Promise<GitHubUser> {
 		console.log(`Getting user from GitHub for username [${username}]...`)

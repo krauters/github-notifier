@@ -1,10 +1,10 @@
 {
   "name": "@krauters/github-notifier",
   "description": "GitHub Notifier by Krauters – Post Open Pull Requests to Slack",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "author": "Colten Krauter <coltenkrauter>",
   "type": "module",
-  "homepage": "https://github.com/krauters/github-notifier",
+  "homepage": "https://buymeacoffee.com/coltenkrauter",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/krauters/github-notifier.git"
@@ -34,24 +34,31 @@
   },
   "license": "ISC",
   "dependencies": {
-    "@actions/core": "1.10.1",
+    "@actions/core": "1.11.1",
     "@actions/github": "6.0.0",
+    "@krauters/environment": "^0.2.1",
+    "@krauters/logger": "^0.3.2",
+    "@krauters/structures": "^1.0.2",
+    "@krauters/utils": "^1.0.0",
     "@octokit/rest": "21.0.2",
-    "@octokit/types": "13.5.0",
-    "@slack/web-api": "7.4.0",
-    "simple-git": "^3.26.0"
+    "@octokit/types": "13.6.1",
+    "@slack/web-api": "7.7.0",
+    "simple-git": "^3.27.0"
   },
   "devDependencies": {
-    "@krauters/eslint-config": "^0.1.0",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^22.5.4",
-    "@vercel/ncc": "^0.38.1",
-    "husky": "9.1.5",
+    "@krauters/eslint-config": "^1.4.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.9.0",
+    "@vercel/ncc": "^0.38.2",
+    "husky": "9.1.6",
     "jest": "^29.7.0",
     "make-coverage-badge": "^1.2.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.2",
-    "typescript-eslint": "^8.5.0"
-  }
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.13.0"
+  },
+  "bugs": {
+		"url": "https://github.com/krauters/github-notifier/issues/new?title=%5BBUG%5D+Brief+Description&template=bug_report.md"
+	}
 }

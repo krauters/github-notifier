@@ -3,6 +3,7 @@
 import type { KnownBlock } from '@slack/web-api'
 
 import { context } from '@actions/github'
+import { formatStringList, plural, snapDate, SnapType } from '@krauters/utils'
 
 import type { RunProps } from './structures.js'
 
@@ -10,16 +11,14 @@ import { homepage, name, version } from '../package.json'
 import { workflowLogsUrl, workflowUrl } from './defaults.js'
 import { GitHubClient } from './utils/github/github-client.js'
 import { PullState, RepositoryType } from './utils/github/structures.js'
-import { adjustDate, formatStringList, plural } from './utils/misc.js'
 import { getFirstBlocks, getLastBlocks, getPullBlocks } from './utils/slack/blocks.js'
 import { SlackClient } from './utils/slack/slack-client.js'
-import { SnapType } from './utils/structures.js'
 import { getApprovedPullRequest } from './utils/test-data.js'
 
 /**
  * Runs the GitHub Notifier to query GitHub for open pull requests and then post messages to Slack channels.
- * @param {RunProps} props - Configurable properties of the GitHub Notifier.
- * @returns {Promise<void>}
+ *
+ * @param props Configurable properties of the GitHub Notifier.
  */
 export async function run({
 	githubProps,
@@ -89,7 +88,7 @@ export async function run({
 
 	if (withPullReport) {
 		const pulls = await gh.getPulls({
-			oldest: adjustDate({ months: -12, snap: SnapType.Month }),
+			oldest: snapDate(new Date(), { months: -12, snap: SnapType.Month }),
 			onlyGhReviews: true,
 			repositories,
 			state: PullState.All,
