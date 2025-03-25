@@ -2,7 +2,7 @@ name: Check Transpiled Code
 
 on:
   push:
-    branches: '*'
+    branches: '**'
 
 permissions:
   contents: read

@@ -1,13 +1,21 @@
-/* eslint-disable jsdoc/require-jsdoc */
 import { plural } from '@krauters/utils'
 
 /**
- * Get have or has depending on quantity context.
- * @param {number} number - The number of entities in question.
+ * Get an emoji based on the age of something.
+ * @param {number} hoursAgo - The number of hours ago since something happened.
  * @returns {string}
  */
-export function haveOrHas(number: number): string {
-	return number === 1 ? 'has' : 'have'
+export function getAgeBasedEmoji(hoursAgo: number): string {
+	console.debug(`Getting an emoji based on age [${hoursAgo}]`)
+
+	if (hoursAgo <= 8) {
+		return ''
+	}
+
+	const emojis = ['red-sus', 'rish_sus']
+	const random = Math.floor(Math.random() * emojis.length)
+
+	return ` :${emojis[random]}:`
 }
 
 /**
@@ -30,19 +38,10 @@ export function getRelativeHumanReadableAge(hoursAgo: number, withAgo = true): s
 }
 
 /**
- * Get an emoji based on the age of something.
- * @param {number} hoursAgo - The number of hours ago since something happened.
+ * Get have or has depending on quantity context.
+ * @param {number} number - The number of entities in question.
  * @returns {string}
  */
-export function getAgeBasedEmoji(hoursAgo: number): string {
-	console.debug(`Getting an emoji based on age [${hoursAgo}]`)
-
-	if (hoursAgo <= 8) {
-		return ''
-	}
-
-	const emojis = ['red-sus', 'rish_sus']
-	const random = Math.floor(Math.random() * emojis.length)
-
-	return ` :${emojis[random]}:`
+export function haveOrHas(number: number): string {
+	return number === 1 ? 'has' : 'have'
 }

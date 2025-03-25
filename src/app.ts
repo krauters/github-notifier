@@ -7,13 +7,15 @@ import { formatStringList, plural, snapDate, SnapType } from '@krauters/utils'
 
 import type { RunProps } from './structures.js'
 
-import { homepage, name, version } from '../package.json'
+import pkg from '../package.json' with { type: 'json' }
 import { workflowLogsUrl, workflowUrl } from './defaults.js'
 import { GitHubClient } from './utils/github/github-client.js'
 import { PullState, RepositoryType } from './utils/github/structures.js'
 import { getFirstBlocks, getLastBlocks, getPullBlocks } from './utils/slack/blocks.js'
 import { SlackClient } from './utils/slack/slack-client.js'
 import { getApprovedPullRequest } from './utils/test-data.js'
+
+const { homepage, name, version } = pkg
 
 /**
  * Runs the GitHub Notifier to query GitHub for open pull requests and then post messages to Slack channels.

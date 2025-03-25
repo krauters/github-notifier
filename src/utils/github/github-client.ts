@@ -1,10 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { getOctokit } from '@actions/github'
-import { average, getHoursAgo, minutesBetweenDates, snapDate, SnapType } from '@krauters/utils'
 
-import { ignoreFilenamesForChanges } from '../../defaults.js'
-import { getRelativeHumanReadableAge } from '../misc.js'
 import {
+	createGitHubClient,
 	type FilesAndChanges,
 	type GetCommitsProps,
 	type GetFilesAndChangesProps,
@@ -13,13 +10,13 @@ import {
 	type GitHubBranchRule,
 	type GitHubBranchRules,
 	type GitHubClientProps,
-	type GitHubClient as GitHubClientType,
 	type GitHubPullCommits,
 	type GitHubPullRequestedReviewers,
 	type GitHubRepositories,
 	type GitHubRepository,
 	GitHubReviewState,
 	type GitHubUser,
+	type GitHubClient as OctokitClient,
 	type Organization,
 	type Pull,
 	PullState,
@@ -29,25 +26,28 @@ import {
 	type Reviews,
 	reviewText,
 } from './structures.js'
+import { average, getHoursAgo, minutesBetweenDates, snapDate, SnapType } from '@krauters/utils'
+import { ignoreFilenamesForChanges } from '../../defaults.js'
+import { getRelativeHumanReadableAge } from '../misc.js'
 
 export class GitHubClient {
 	public cacheOrganization!: Organization
 	public cacheUser: Record<string, GitHubUser> = {}
-	public client: GitHubClientType
+	public client: OctokitClient
 
 	/**
-	 * A GitHub client for interacting with a GitHub API.
+	 * Create a new GitHub client.
 	 *
-	 * @param props Properties toi configure GitHub client.
+	 * @param props GitHub client configuration.
 	 */
 	constructor({ options = {}, token }: GitHubClientProps) {
-		this.client = getOctokit(token, options)
+		this.client = createGitHubClient(token, options)
 	}
 
 	/**
-	 * Get commits in a pull.
+	 * Get commits for a pull request.
 	 *
-	 * @param props Properties for which commit to get.
+	 * @param props Pull request information.
 	 */
 	async getCommits({ number, repo }: GetCommitsProps): Promise<GitHubPullCommits> {
 		return await this.client.paginate(this.client.rest.pulls.listCommits, {
@@ -58,23 +58,22 @@ export class GitHubClient {
 	}
 
 	/**
-	 * Get a GitHub user's email address from a username.
+	 * Get a user's email from their GitHub username.
 	 *
 	 * @param username A GitHub username.
 	 */
 	async getEmail(username: string): Promise<string | undefined> {
 		console.log(`Getting email from GitHub for username [${username}]...`)
 		const user = await this.getUser(username)
-
 		console.log(`User email for [${username}] is [${user?.email}]`)
 
 		return user?.email ?? undefined
 	}
 
 	/**
-	 * Get the number of changes for a given pull.
+	 * Get files and changes for a pull request.
 	 *
-	 * @param props Properties for which files and changes to get.
+	 * @param props Pull request information.
 	 */
 	async getFilesAndChanges({ number, repo }: GetFilesAndChangesProps): Promise<FilesAndChanges> {
 		const { data: fileList } = await this.client.rest.pulls.listFiles({
@@ -97,7 +96,7 @@ export class GitHubClient {
 	}
 
 	/**
-	 * Get organization associated with current token.
+	 * Get organization information for the authenticated user.
 	 */
 	async getOrg(): Promise<Organization> {
 		if (!this.cacheOrganization) {
@@ -106,7 +105,9 @@ export class GitHubClient {
 
 			if (data.length > 1) {
 				console.error(data)
-				throw new Error('More than one organization associated with current token')
+				throw new Error(
+					'More than one organization associated with current token (Please ensure you are using fine-grained token)',
+				)
 			}
 
 			if (data.length === 0) {
@@ -125,16 +126,16 @@ export class GitHubClient {
 	}
 
 	/**
-	 * Get organization name associated with current token.
+	 * Get the organization name for the authenticated user.
 	 */
 	async getOrgName(): Promise<string> {
 		return (await this.getOrg()).name
 	}
 
 	/**
-	 * Get a pull report.
+	 * Generate a report of pull request metrics.
 	 *
-	 * @param pulls Pulls against which a report will be generated.
+	 * @param pulls List of pull requests to analyze.
 	 */
 	getPullReport(pulls: Pull[]) {
 		const report: Record<string, ReportItem> = {}
@@ -142,11 +143,11 @@ export class GitHubClient {
 			if (!pull.mergedAt) {
 				continue
 			}
+
 			const sortedReviews = pull.reviewReport.ghReviews.sort(
 				(a, b) => new Date(String(a.submitted_at)).getTime() - new Date(String(b.submitted_at)).getTime(),
 			)
 			const firstReview = sortedReviews[0]
-
 			const createdAt = pull.createdAt
 			const key = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(createdAt)
 			if (!(key in report)) {
@@ -157,21 +158,29 @@ export class GitHubClient {
 			}
 
 			const minutesUntilMerged = minutesBetweenDates(pull.createdAt, pull.mergedAt)
-			// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-			minutesUntilMerged && report[key].minutesUntilMerged.push(minutesUntilMerged / 60)
+			if (minutesUntilMerged) {
+				report[key].minutesUntilMerged.push(minutesUntilMerged / 60)
+			}
 
 			const minutesUntilFirstReview = firstReview
 				? minutesBetweenDates(pull.createdAt, new Date(String(firstReview.submitted_at)))
 				: undefined
-			// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-			minutesUntilFirstReview && report[key].minutesUntilFirstReview.push(minutesUntilFirstReview / 60)
+			if (minutesUntilFirstReview) {
+				report[key].minutesUntilFirstReview.push(minutesUntilFirstReview / 60)
+			}
 		}
 
 		let reportString = 'GitHub Notifier Pull Report (Averages)\n'
 		for (const [key, item] of Object.entries(report).sort(
 			([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
 		)) {
-			reportString += `${key}:\tHours Until Merged: [${String(average(item.minutesUntilMerged)).padStart(5, '0')}],\tHours Until First Review: [${String(average(item.minutesUntilFirstReview)).padStart(5, '0')}],\tTotal PRs: [${item.minutesUntilMerged.length}]\n`
+			reportString += `${key}:\tHours Until Merged: [${String(average(item.minutesUntilMerged)).padStart(
+				5,
+				'0',
+			)}],\tHours Until First Review: [${String(average(item.minutesUntilFirstReview)).padStart(
+				5,
+				'0',
+			)}],\tTotal PRs: [${item.minutesUntilMerged.length}]\n`
 		}
 
 		return {
@@ -181,9 +190,9 @@ export class GitHubClient {
 	}
 
 	/**
-	 * Get all pulls in the GitHub org.
+	 * Get pull requests from repositories.
 	 *
-	 * @param props Properties for which pulls to get.
+	 * @param props Configuration for retrieving pull requests.
 	 */
 	async getPulls({
 		oldest = snapDate(new Date(), { months: -6, snap: SnapType.Month }),
@@ -217,7 +226,6 @@ export class GitHubClient {
 					console.debug(
 						`Paginated response for repository [${repo.name}], status [${response.status}], items [${response.data.length}]`,
 					)
-
 					const found = response.data.find((pull) => new Date(pull.created_at) < oldest)
 					if (found && state !== PullState.Open) {
 						console.debug(`Done due to #${found.number} / ${found.html_url}`)
@@ -232,14 +240,13 @@ export class GitHubClient {
 			for (const pull of pulls) {
 				const { base, closed_at, created_at, draft, html_url, merged_at, number, title, user } = pull
 				console.log(`Processing pull [${number}]...`)
-
 				if (!withDrafts && draft) {
 					console.log(`withDrafts is [${withDrafts}]`)
 					continue
 				}
+
 				const createdAt = new Date(created_at)
 				const ageInHours = getHoursAgo(createdAt)
-
 				const filesAndChanges = withFilesAndChanges
 					? await this.getFilesAndChanges({ number, repo: repo.name })
 					: undefined
@@ -282,9 +289,9 @@ export class GitHubClient {
 	}
 
 	/**
-	 * Get repositories in the GitHub org that the token has access to.
+	 * Get repositories for the organization.
 	 *
-	 * @param props Properties for which repositories to get.
+	 * @param props Configuration for retrieving repositories.
 	 */
 	async getRepositories({
 		repositoryFilter = [],
@@ -294,13 +301,11 @@ export class GitHubClient {
 	}: GetRepositoriesProps): Promise<GitHubRepositories> {
 		const org = await this.getOrgName()
 		console.log(`Getting all repositories in org [${org}]...`)
-
 		const response = await this.client.paginate(this.client.rest.repos.listForOrg, {
 			org,
 			per_page: 100,
 			type,
 		})
-
 		let filteredRepos = response
 		if (repositoryFilter.length > 0) {
 			filteredRepos = filteredRepos.filter((repo: GitHubRepository) => repositoryFilter.includes(repo.name))
@@ -311,7 +316,6 @@ export class GitHubClient {
 		if (!withPublic) {
 			filteredRepos = filteredRepos.filter((repo: GitHubRepository) => repo.visibility !== RepositoryType.Public)
 		}
-
 		console.log(`Found [${filteredRepos.length}] repositories`)
 		console.log(filteredRepos.map((repo) => repo.name))
 
@@ -319,10 +323,10 @@ export class GitHubClient {
 	}
 
 	/**
-	 * Get requested reviewers in a pull.
+	 * Get requested reviewers for a pull request.
 	 *
-	 * @param repo The repository associated with the pull.
-	 * @param number The pull number.
+	 * @param repo Repository name.
+	 * @param number Pull request number.
 	 */
 	async getRequestedReviewers(repo: string, number: number): Promise<GitHubPullRequestedReviewers> {
 		const response = await this.client.rest.pulls.listRequestedReviewers({
@@ -335,29 +339,25 @@ export class GitHubClient {
 	}
 
 	/**
-	 * Get the required number of reviewers for a branch based on branch rules.
+	 * Get the number of required reviewers for a branch.
 	 *
-	 * @param repo The repository to get branch rules for.
-	 * @param branchName The branch to get branch rules for.
+	 * @param repo Repository name.
+	 * @param branchName Branch name.
 	 */
 	async getRequiredReviewers(repo: string, branchName: string): Promise<number> {
 		const org = await this.getOrgName()
 		console.log(`Getting branch rules for repository [${repo}] branch [${branchName}]...`)
-
 		try {
-			// https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28#get-rules-for-a-branch
 			const rules: GitHubBranchRules = await this.client.paginate(this.client.rest.repos.getBranchRules, {
 				branch: branchName,
 				owner: org,
 				repo,
 			})
-
 			const branch = await this.client.rest.repos.getBranch({
 				branch: branchName,
 				owner: org,
 				repo,
 			})
-
 			let branchRequiredReviewers = 0
 			if (branch.data.protection.enabled) {
 				console.log(`
@@ -369,15 +369,15 @@ export class GitHubClient {
 				branchRequiredReviewers =
 					branchProtections.data?.required_pull_request_reviews?.required_approving_review_count ?? 0
 			}
-
 			const requiredReviewers: number[] = rules
-
-				// @ts-expect-error "parameters" does exist on "rule"
-				.filter((rule: GitHubBranchRule) => !!rule.parameters?.required_approving_review_count)
-
-				// @ts-expect-error "parameters" does exist on "rule"
-				.map((rule: GitHubBranchRule) => Number(rule.parameters.required_approving_review_count))
-
+				.filter(
+					(rule): rule is { parameters: { required_approving_review_count: number } } & GitHubBranchRule =>
+						'parameters' in rule &&
+						typeof rule.parameters === 'object' &&
+						rule.parameters !== null &&
+						'required_approving_review_count' in rule.parameters,
+				)
+				.map((rule) => Number(rule.parameters.required_approving_review_count))
 			console.log(`Required reviewers for repository [${repo}] branch [${branchName}] is [${requiredReviewers}]`)
 
 			return Math.max(...requiredReviewers, branchRequiredReviewers)
@@ -389,13 +389,13 @@ export class GitHubClient {
 	}
 
 	/**
-	 * Get a report of the pull reviews.
+	 * Get review report for a pull request.
 	 *
-	 * @param repo The repository associated with the pull.
-	 * @param number The pull number.
-	 * @param baseRef The base ref of the pull.
-	 * @param requestedReviewers A list of requested reviewer logins.
-	 * @param [onlyGhReviews] Only return Github review data in the report.
+	 * @param repo Repository name.
+	 * @param number Pull request number.
+	 * @param baseRef Base reference branch.
+	 * @param requestedReviewers List of requested reviewer usernames.
+	 * @param onlyGhReviews Whether to only include GitHub reviews.
 	 */
 	async getReviewReport(
 		repo: string,
@@ -409,19 +409,14 @@ export class GitHubClient {
 			pull_number: number,
 			repo,
 		})
-
 		if (onlyGhReviews) {
-			return {
-				ghReviews,
-			}
+			return { ghReviews }
 		}
-
 		const allowedStates = [
 			GitHubReviewState.Approved,
 			GitHubReviewState.ChangesRequested,
 			GitHubReviewState.Commented,
 		]
-
 		const reviews: Reviews = {}
 		for (const ghReview of ghReviews ?? []) {
 			const login = ghReview?.user?.login
@@ -431,21 +426,18 @@ export class GitHubClient {
 				)
 				continue
 			}
-
 			if (requestedReviewers.includes(login)) {
 				console.debug(
 					`Ignoring review with state [${ghReview.state}] because user with login [${login}] was requested as a reviewer so previous reviews are no longer valid`,
 				)
 				continue
 			}
-
 			const email = await this.getEmail(login)
 			const submittedAt = new Date(String(ghReview.submitted_at))
 			if (login in reviews && reviews[login].submittedAt.valueOf() > submittedAt.valueOf()) {
 				console.debug('Ignoring old review')
 				continue
 			}
-
 			reviews[login] = {
 				context: reviewText[ghReview.state],
 				email,
@@ -456,14 +448,12 @@ export class GitHubClient {
 			}
 			console.log(`Adding/overwriting reviewer [${login}] with state [${ghReview.state}] for pull [${number}]`)
 		}
-
 		const approvals = Object.values(reviews).filter(
 			(review) => (review.state as GitHubReviewState) === GitHubReviewState.Approved,
 		).length
 		const changesRequested = Object.values(reviews).filter(
 			(review) => (review.state as GitHubReviewState) === GitHubReviewState.ChangesRequested,
 		).length
-
 		const requiredReviewers = await this.getRequiredReviewers(repo, baseRef)
 		const approvalsRemaining = Math.max(requiredReviewers - approvals, 0)
 
@@ -484,18 +474,13 @@ export class GitHubClient {
 	 */
 	async getUser(username: string): Promise<GitHubUser> {
 		console.log(`Getting user from GitHub for username [${username}]...`)
-
 		if (username in this.cacheUser) {
 			console.log('Found cache hit!')
 
 			return this.cacheUser[username]
 		}
-
 		console.log('No hit in cache, making request...')
-		const { data: user } = await this.client.rest.users.getByUsername({
-			username,
-		})
-
+		const { data: user } = await this.client.rest.users.getByUsername({ username })
 		console.log('Storing result in cache...')
 		this.cacheUser[username] = user
 

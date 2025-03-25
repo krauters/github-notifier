@@ -5,7 +5,7 @@ on:
   release:
     types: published
   push:
-    branches: '*'
+    branches: '**'
   workflow_dispatch:
 
 jobs:
