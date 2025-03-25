@@ -3,7 +3,7 @@ run-name: Tests [${{ github.ref_name }}] triggered by [${{ github.event_name }}/
 
 on:
   push:
-    branches: '*'
+    branches: '**'
   workflow_dispatch:
 
 permissions:

@@ -4,7 +4,6 @@ import type { Pull } from './github/structures.js'
 
 import { getRelativeHumanReadableAge } from './misc.js'
 
-// eslint-disable-next-line jsdoc/require-jsdoc
 export function getApprovedPullRequest(): Pull {
 	console.log(`Getting test data for user [${context.actor}]`)
 
