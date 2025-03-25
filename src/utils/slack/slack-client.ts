@@ -10,10 +10,10 @@ import { WebClient } from '@slack/web-api'
 import { type GetUser, SlackAppUrl, type SlackClientProps } from './structures.js'
 
 export class SlackClient {
+	public bot?: Bot
 	private channels: string[]
 	private client: WebClient
 	private users: undefined | User[]
-	public bot?: Bot
 
 	/**
 	 * Slack client for interacting with the Slack API.

@@ -1,29 +1,13 @@
-import type { context, GitHub } from '@actions/github/lib/utils.js'
+import type { context } from '@actions/github/lib/utils.js'
 import type { OctokitOptions } from '@octokit/core'
 import type { GetResponseDataTypeFromEndpointMethod as GetType } from '@octokit/types'
-
-import { Octokit } from '@octokit/rest'
+import { getOctokit } from '@actions/github'
 
 export type Context = typeof context
+export type GitHubClient = ReturnType<typeof getOctokit>
 
-export type GitHubClient = InstanceType<typeof GitHub>
-
-export const octokit = new Octokit()
-
-export type GitHubRepositories = GetType<typeof octokit.repos.listForOrg>
-export type GitHubRepository = GitHubRepositories[number]
-export type GitHubPulls = GetType<typeof octokit.pulls.list>
-export type GitHubPull = GitHubPulls[number]
-export type GitHubPullDetails = GetType<typeof octokit.pulls.get>
-export type GitHubPullCommits = GetType<typeof octokit.pulls.listCommits>
-export type GitHubPullRequestedReviewers = GetType<typeof octokit.pulls.listRequestedReviewers>
-export type GitHubPullComments = GetType<typeof octokit.issues.listComments>
-export type GitHubBranchRules = GetType<typeof octokit.repos.getBranchRules>
-export type GitHubBranchRule = GitHubBranchRules[number]
-export type GitHubPullReviews = GetType<typeof octokit.pulls.listReviews>
-export type GitHubUser = GetType<typeof octokit.users.getByUsername>
-export type GitHubOrgMemberships = GetType<typeof octokit.orgs.listMembershipsForAuthenticatedUser>
-export type GitHubPullReview = GitHubPullReviews[number]
+export const createGitHubClient = (token: string, options = {} as OctokitOptions): GitHubClient =>
+	getOctokit(token, options)
 
 export enum GitHubReviewState {
 	Approved = 'APPROVED',
@@ -33,7 +17,6 @@ export enum GitHubReviewState {
 	Pending = 'PENDING',
 }
 
-export type GitHubRepositoryType = 'all' | 'forks' | 'member' | 'private' | 'public' | 'sources' | undefined
 export enum RepositoryType {
 	All = 'all',
 	Forks = 'forks',
@@ -44,21 +27,89 @@ export enum RepositoryType {
 	Public = 'public',
 }
 
+// Type alias for client endpoints
+export type Endpoints = GitHubClient['rest']
+
+export type GitHubBranchRule = GitHubBranchRules[number]
+
+// Simplified GitHub API response types
+export type GitHubBranchRules = GetType<Endpoints['repos']['getBranchRules']>
+export type GitHubOrgMemberships = GetType<Endpoints['orgs']['listMembershipsForAuthenticatedUser']>
+export type GitHubPull = GitHubPulls[number]
+export type GitHubPullComments = GetType<Endpoints['issues']['listComments']>
+export type GitHubPullCommits = GetType<Endpoints['pulls']['listCommits']>
+export type GitHubPullDetails = GetType<Endpoints['pulls']['get']>
+export type GitHubPullRequestedReviewers = GetType<Endpoints['pulls']['listRequestedReviewers']>
+export type GitHubPullReview = GitHubPullReviews[number]
+export type GitHubPullReviews = GetType<Endpoints['pulls']['listReviews']>
+export type GitHubPulls = GetType<Endpoints['pulls']['list']>
+export type GitHubRepositories = GetType<Endpoints['repos']['listForOrg']>
+export type GitHubRepository = GitHubRepositories[number]
+export type GitHubRepositoryType = 'all' | 'forks' | 'member' | 'private' | 'public' | 'sources' | undefined
+
+export type GitHubUser = GetType<Endpoints['users']['getByUsername']>
+
 export const reviewText: Record<string, string> = {
 	[GitHubReviewState.Approved]: 'approved this',
 	[GitHubReviewState.ChangesRequested]: 'requested changes',
 	[GitHubReviewState.Commented]: 'commented on this',
 }
 
-export interface Review {
-	context: string
-	email?: string
-	login: string
-	relativeHumanReadableAge: string
-	state: string
-	submittedAt: Date
+export enum PullState {
+	All = 'all',
+	Closed = 'closed',
+	Open = 'open',
 }
-export type Reviews = Record<string, Review>
+
+export interface ConfigurableGetPullsProps {
+	state?: PullState
+	withDrafts: boolean
+}
+
+export interface ConfigurableGetRepositoriesProps {
+	repositoryFilter: string[]
+	withArchived: boolean
+	withPublic: boolean
+}
+
+export interface FilesAndChanges {
+	changes: number
+	files: number
+}
+
+export interface GetCommitsProps {
+	number: number
+	repo: string
+}
+
+export interface GetFilesAndChangesProps {
+	number: number
+	repo: string
+}
+
+export interface GetPullsProps extends ConfigurableGetPullsProps {
+	oldest?: Date
+	onlyGhReviews?: boolean
+	repositories: GitHubRepositories
+	withCommits?: boolean
+	withFilesAndChanges?: boolean
+	withUser?: boolean
+}
+
+export interface GetRepositoriesProps extends ConfigurableGetRepositoriesProps {
+	type: GitHubRepositoryType
+}
+
+export interface GitHubClientProps {
+	options?: OctokitOptions
+	token: string
+}
+
+export interface Organization {
+	data: GitHubOrgMemberships[number]
+	name: string
+}
+
 export interface Pull {
 	age: string
 	ageInHours: number
@@ -80,15 +131,18 @@ export interface Pull {
 	user?: GitHubUser
 }
 
-export enum PullState {
-	All = 'all',
-	Closed = 'closed',
-	Open = 'open',
+export interface ReportItem {
+	minutesUntilFirstReview: number[]
+	minutesUntilMerged: number[]
 }
 
-export interface FilesAndChanges {
-	changes: number
-	files: number
+export interface Review {
+	context: string
+	email?: string
+	login: string
+	relativeHumanReadableAge: string
+	state: string
+	submittedAt: Date
 }
 
 export interface ReviewReport {
@@ -100,51 +154,4 @@ export interface ReviewReport {
 	reviews?: Reviews
 }
 
-export interface ReportItem {
-	minutesUntilFirstReview: number[]
-	minutesUntilMerged: number[]
-}
-
-export interface Organization {
-	data: GitHubOrgMemberships[number]
-	name: string
-}
-
-export interface ConfigurableGetPullsProps {
-	state?: PullState
-	withDrafts: boolean
-}
-
-export interface GetPullsProps extends ConfigurableGetPullsProps {
-	oldest?: Date
-	onlyGhReviews?: boolean
-	repositories: GitHubRepositories
-	withCommits?: boolean
-	withFilesAndChanges?: boolean
-	withUser?: boolean
-}
-
-export interface GetCommitsProps {
-	number: number
-	repo: string
-}
-
-export interface GitHubClientProps {
-	options?: OctokitOptions
-	token: string
-}
-
-export interface GetFilesAndChangesProps {
-	number: number
-	repo: string
-}
-
-export interface ConfigurableGetRepositoriesProps {
-	repositoryFilter: string[]
-	withArchived: boolean
-	withPublic: boolean
-}
-
-export interface GetRepositoriesProps extends ConfigurableGetRepositoriesProps {
-	type: GitHubRepositoryType
-}
+export type Reviews = Record<string, Review>

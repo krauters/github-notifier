@@ -10,6 +10,72 @@ import { prBaseUrl, scmUrl } from '../../defaults.js'
 import { getAgeBasedEmoji, haveOrHas } from '../misc.js'
 
 /**
+ * Get a context block with markdown text.
+ *
+ * @param text The footer text/markdown.
+ * @param [withIndentation=false] Include leading white space.
+ */
+export function getContextMarkdownBlock(text: string, withIndentation = false): KnownBlock[] {
+	const elements: PlainTextElement[] = []
+	if (withIndentation) {
+		elements.push({
+			text: ' ',
+			type: 'plain_text',
+		})
+	}
+
+	return [
+		{
+			elements: [
+				...elements,
+				{
+					text,
+					type: 'mrkdwn',
+				},
+			],
+			type: 'context',
+		},
+	]
+}
+
+/**
+ * Get emoji blocks.
+ *
+ * @param name The name of the emoji.
+ * @param type The type of section.
+ */
+export function getEmojiBlocks(name?: string, type = 'rich_text_section'): (PlainTextElement | RichTextElement)[] {
+	if (!name) {
+		return []
+	}
+
+	if (type === 'rich_text_section') {
+		return [
+			{
+				name,
+				type: 'emoji',
+			},
+			{
+				text: ' ',
+				type: 'text',
+			},
+		]
+	}
+
+	if (type === 'context') {
+		return [
+			{
+				emoji: true,
+				text: `:${name}:`,
+				type: 'plain_text',
+			},
+		]
+	}
+
+	return []
+}
+
+/**
  * Get the first Slack block which includes a header and buttons.
  *
  * @param org The GitHub org.
@@ -63,42 +129,13 @@ export function getLastBlocks(text: string): KnownBlock[] {
 }
 
 /**
- * Get a context block with markdown text.
- *
- * @param text The footer text/markdown.
- * @param [withIndentation=false] Include leading white space.
- */
-export function getContextMarkdownBlock(text: string, withIndentation = false): KnownBlock[] {
-	const elements: PlainTextElement[] = []
-	if (withIndentation) {
-		elements.push({
-			text: ' ',
-			type: 'plain_text',
-		})
-	}
-
-	return [
-		{
-			elements: [
-				...elements,
-				{
-					text,
-					type: 'mrkdwn',
-				},
-			],
-			type: 'context',
-		},
-	]
-}
-
-/**
  * Get a pull block.
  *
  * @param pull Pull data.
  * @param slack Slack client.
  * @param withUserMentions Whether or not to mention Slack users.
  */
-// eslint-disable-next-line max-lines-per-function
+
 export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMentions: boolean): Promise<KnownBlock[]> {
 	const {
 		age,
@@ -222,41 +259,4 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 			type: 'divider',
 		},
 	]
-}
-
-/**
- * Get emoji blocks.
- *
- * @param name The name of the emoji.
- * @param type The type of section.
- */
-export function getEmojiBlocks(name?: string, type = 'rich_text_section'): (PlainTextElement | RichTextElement)[] {
-	if (!name) {
-		return []
-	}
-
-	if (type === 'rich_text_section') {
-		return [
-			{
-				name,
-				type: 'emoji',
-			},
-			{
-				text: ' ',
-				type: 'text',
-			},
-		]
-	}
-
-	if (type === 'context') {
-		return [
-			{
-				emoji: true,
-				text: `:${name}:`,
-				type: 'plain_text',
-			},
-		]
-	}
-
-	return []
 }

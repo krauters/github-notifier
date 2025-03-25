@@ -7,13 +7,15 @@ import { formatStringList, plural, snapDate, SnapType } from '@krauters/utils'
 
 import type { RunProps } from './structures.js'
 
-import { homepage, name, version } from '../package.json'
+import pkg from '../package.json' with { type: 'json' }
 import { workflowLogsUrl, workflowUrl } from './defaults.js'
 import { GitHubClient } from './utils/github/github-client.js'
-import { PullState, RepositoryType } from './utils/github/structures.js'
+import { Pull, PullState, RepositoryType } from './utils/github/structures.js'
 import { getFirstBlocks, getLastBlocks, getPullBlocks } from './utils/slack/blocks.js'
 import { SlackClient } from './utils/slack/slack-client.js'
 import { getApprovedPullRequest } from './utils/test-data.js'
+
+const { homepage, name, version } = pkg
 
 /**
  * Runs the GitHub Notifier to query GitHub for open pull requests and then post messages to Slack channels.
@@ -32,17 +34,21 @@ export async function run({
 	withUserMentions,
 }: RunProps): Promise<void> {
 	const slack = new SlackClient(slackProps)
-	const gh = new GitHubClient(githubProps)
+
+	const openPulls: Pull[] = []
+	githubProps.forEach(async (props) => {
+		const client = new GitHubClient(props)
+		const repositories = await client.getRepositories({
+			repositoryFilter,
+			type: RepositoryType.All,
+			withArchived,
+			withPublic,
+		})
+		openPulls.push(...(await client.getPulls({ repositories, state: PullState.Open, withDrafts })))
+	})
 
 	await slack.enforceAppNamePattern(/.*github[\s-_]?notifier$/i)
 
-	const repositories = await gh.getRepositories({
-		repositoryFilter,
-		type: RepositoryType.All,
-		withArchived,
-		withPublic,
-	})
-	const openPulls = await gh.getPulls({ repositories, state: PullState.Open, withDrafts })
 	let blocks: KnownBlock[] = []
 	for (const openPull of openPulls) {
 		console.log(`Building Slack blocks from pull request [${openPull.number}]`)
@@ -72,7 +78,7 @@ export async function run({
 		text = `_<${workflowUrl}|Repository filter>: ${formatStringList(repositoryFilter)}_`
 	}
 
-	blocks = [...getFirstBlocks(gh.cacheOrganization.name, header, text), ...blocks]
+	blocks = [...getFirstBlocks('fake-org', header, text), ...blocks]
 
 	blocks = [
 		...blocks,
@@ -85,18 +91,4 @@ export async function run({
 	]
 
 	await slack.postMessage(header, blocks)
-
-	if (withPullReport) {
-		const pulls = await gh.getPulls({
-			oldest: snapDate(new Date(), { months: -12, snap: SnapType.Month }),
-			onlyGhReviews: true,
-			repositories,
-			state: PullState.All,
-			withCommits: false,
-			withDrafts: false,
-			withFilesAndChanges: false,
-			withUser: false,
-		})
-		console.log(gh.getPullReport(pulls).reportString)
-	}
 }

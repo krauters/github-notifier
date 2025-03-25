@@ -9,7 +9,7 @@ import { run } from './app.js'
 export async function main(): Promise<void> {
 	debug('Starting main...')
 	debug('Parsing inputs...')
-	const ghToken = getInput('github-token', { required: true })
+	const ghTokens = stringToArray(getInput('github-tokens', { required: true }))
 	const channels = stringToArray(getInput('channels', { required: true }))
 	const slackToken = getInput('slack-token', { required: true })
 	const withTestData = getBooleanInput('with-test-data')
@@ -24,12 +24,12 @@ export async function main(): Promise<void> {
 	const baseUrl = getInput('base-url') || process.env.GITHUB_API_URL
 
 	await run({
-		githubProps: {
+		githubProps: ghTokens.map((token) => ({
 			options: {
 				baseUrl,
 			},
-			token: ghToken,
-		},
+			token,
+		})),
 		repositoryFilter,
 		slackProps: {
 			channels,

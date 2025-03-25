@@ -9,9 +9,9 @@ branding:
 license: ISC
 
 inputs:
-  github-token:
+  github-tokens:
     description: |
-      Fine grained Github token with scopes,
+      Comma separated list of fine grained Github tokens with scopes (one per GitHub Organization),
       - Administration:read (to list all repos in org)
       - Pull Requests:read (to get PR details for repos)
       - (Organzation) Members:read on all repos (to get GitHub email for Slack user matching)
