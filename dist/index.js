@@ -80735,40 +80735,140 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 79407:
+/***/ 168:
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _main_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7052);
-/**
- * The entrypoint for the action.
- */
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(93228);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(37484);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(95122);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _package_json__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8330);
+/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(27242);
+/* harmony import */ var _utils_github_github_client_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(32031);
+/* harmony import */ var _utils_github_structures_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(28315);
+/* harmony import */ var _utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(96114);
+/* harmony import */ var _utils_slack_slack_client_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(70741);
+/* harmony import */ var _utils_test_data_js__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(23930);
+/* harmony import */ var _input_parser_js__WEBPACK_IMPORTED_MODULE_10__ = __nccwpck_require__(40935);
+// https://github.com/actions/github-script
 
-await (0,_main_js__WEBPACK_IMPORTED_MODULE_0__/* .main */ .i)();
+
+
+
+
+
+
+
+
+
+
+const { /* homepage */ "TB": homepage, /* name */ "UU": name, /* version */ "rE": version } = _package_json__WEBPACK_IMPORTED_MODULE_3__;
+/**
+ * The main function that gets executed when the action is run.
+ */
+async function main() {
+    try {
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)('Starting main...');
+        const { githubConfig, repositoryFilter, slackConfig, withArchived, withDrafts, withPublic, withTestData, withUserMentions, } = (0,_input_parser_js__WEBPACK_IMPORTED_MODULE_10__/* .parseInputs */ .T)();
+        const slack = new _utils_slack_slack_client_js__WEBPACK_IMPORTED_MODULE_8__/* .SlackClient */ .Q(slackConfig);
+        const results = await githubConfig.tokens.reduce(async (accPromise, token) => {
+            const acc = await accPromise;
+            try {
+                // TODO - Consider making this thread safe so requests can be made in parallel
+                const client = new _utils_github_github_client_js__WEBPACK_IMPORTED_MODULE_5__/* .GitHubClient */ .j({
+                    options: githubConfig.options,
+                    token,
+                });
+                const repositories = await client.getRepositories({
+                    repositoryFilter,
+                    type: _utils_github_structures_js__WEBPACK_IMPORTED_MODULE_6__/* .RepositoryType */ .vJ.All,
+                    withArchived,
+                    withPublic,
+                });
+                const org = await client.getOrg();
+                const pulls = await client.getPulls({ repositories, state: _utils_github_structures_js__WEBPACK_IMPORTED_MODULE_6__/* .PullState */ .lT.Open, withDrafts });
+                console.log(`Found ${pulls.length} pulls for ${org.name}`);
+                return [...acc, { client, org: org.name, pulls }];
+            }
+            catch (error) {
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.error)(`Failed to call to GitHub [${githubConfig.options?.baseUrl}] with last 4 chars of token [${token.slice(-4)}] with error [${error}]. Skipping this requests with this token.`);
+                return acc;
+            }
+        }, Promise.resolve([]));
+        if (results.length === 0) {
+            throw new Error('All GitHub tokens failed to process');
+        }
+        console.log(`Successfully processed ${results.length} out of ${githubConfig.tokens.length} tokens`);
+        await slack.enforceAppNamePattern(/.*github[\s-_]?notifier$/i);
+        const pulls = results.flatMap((result) => result.pulls);
+        console.log(`Found ${pulls.length} pulls`);
+        console.log(pulls);
+        // Multiple tokens may have overlapping repository access, deduplicate PRs by org/repo/number
+        const dedupedPulls = [...new Map(pulls.map((pull) => [`${pull.org}/${pull.repo}/${pull.number}`, pull]))].map(
+        // eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars
+        ([_, pull]) => pull);
+        let blocks = [];
+        for (const pull of dedupedPulls) {
+            console.log(`Building Slack blocks from pull request [${pull.number}]`);
+            blocks = [...blocks, ...(await (0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getPullBlocks */ .Q)(pull, slack, withUserMentions))];
+        }
+        if (withTestData) {
+            console.log(`With test data: [${withTestData}]`);
+            const testDataPullRequest = (0,_utils_test_data_js__WEBPACK_IMPORTED_MODULE_9__/* .getApprovedPullRequest */ .Q)();
+            for (let i = 1; i <= 2; i++) {
+                blocks = [
+                    ...blocks,
+                    ...(await (0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getPullBlocks */ .Q)({ ...testDataPullRequest, number: i }, slack, withUserMentions)),
+                ];
+            }
+        }
+        const total = dedupedPulls.length;
+        let header = `You've got ${total} open pull ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.plural)('request', total)}.`;
+        if (total === 0) {
+            header = 'There are no open pull requests! :tada:';
+        }
+        let text;
+        if (repositoryFilter.length > 0) {
+            text = `_<${_constants_js__WEBPACK_IMPORTED_MODULE_4__/* .workflowUrl */ .pk}|Repository filter>: ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.formatStringList)(repositoryFilter)}_`;
+        }
+        const orgs = [...new Set(dedupedPulls.map((pull) => pull.org))];
+        blocks = [...(0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getFirstBlocks */ .nh)(orgs, header, text), ...blocks];
+        blocks = [
+            ...blocks,
+            ...(0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getLastBlocks */ .XZ)([
+                `Run from <${_constants_js__WEBPACK_IMPORTED_MODULE_4__/* .workflowUrl */ .pk}|${_actions_github__WEBPACK_IMPORTED_MODULE_0__.context.repo.owner}`,
+                `/${_actions_github__WEBPACK_IMPORTED_MODULE_0__.context.payload.repository?.name}> (<${_constants_js__WEBPACK_IMPORTED_MODULE_4__/* .workflowLogsUrl */ .GM}|logs>) using <${homepage}|${name}>@<${homepage}/releases/tag/${version}|${version}>`,
+            ].join('')),
+        ];
+        await slack.postMessage(header, blocks);
+    }
+    catch (err) {
+        console.error('Fatal error:', err);
+        process.exit(1);
+    }
+}
+// This is required for the GitHub Action to execute main() when it invokes app.ts as specified in action.yaml
+await main();
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } }, 1);
 
 /***/ }),
 
-/***/ 7052:
+/***/ 27242:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
-
-// EXPORTS
-__nccwpck_require__.d(__webpack_exports__, {
-  i: () => (/* binding */ main)
-});
-
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var core = __nccwpck_require__(37484);
-// EXTERNAL MODULE: ./node_modules/@krauters/utils/dist/src/index.js
-var src = __nccwpck_require__(95122);
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __nccwpck_require__(93228);
-;// CONCATENATED MODULE: ./package.json
-const package_namespaceObject = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"0.14.1","TB":"https://buymeacoffee.com/coltenkrauter"}');
-;// CONCATENATED MODULE: ./src/defaults.ts
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   Fh: () => (/* binding */ prBaseUrl),
+/* harmony export */   GM: () => (/* binding */ workflowLogsUrl),
+/* harmony export */   Hm: () => (/* binding */ scmUrl),
+/* harmony export */   bQ: () => (/* binding */ ignoreFilenamesForChanges),
+/* harmony export */   pk: () => (/* binding */ workflowUrl)
+/* harmony export */ });
+/* unused harmony export workflowPath */
 const scmUrl = 'https://github.com';
 const prBaseUrl = `${scmUrl}/pulls?q=is%3Aopen+is%3Apr+archived%3Afalse+draft%3Afalse+user%3A`;
 const ignoreFilenamesForChanges = ['package-lock.json'];
@@ -80776,83 +80876,75 @@ const workflowLogsUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_R
 const workflowPath = process.env.GITHUB_WORKFLOW_REF?.split('@')[0].replace(String(process.env.GITHUB_REPOSITORY), '');
 const workflowUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/tree/${process.env.GITHUB_REF_NAME}/${workflowPath}`;
 
-;// CONCATENATED MODULE: ./src/utils/github/structures.ts
 
-const createGitHubClient = (token, options = {}) => (0,github.getOctokit)(token, options);
-var GitHubReviewState;
-(function (GitHubReviewState) {
-    GitHubReviewState["Approved"] = "APPROVED";
-    GitHubReviewState["ChangesRequested"] = "CHANGES_REQUESTED";
-    GitHubReviewState["Commented"] = "COMMENTED";
-    GitHubReviewState["Dismissed"] = "DISMISSED";
-    GitHubReviewState["Pending"] = "PENDING";
-})(GitHubReviewState || (GitHubReviewState = {}));
-var RepositoryType;
-(function (RepositoryType) {
-    RepositoryType["All"] = "all";
-    RepositoryType["Forks"] = "forks";
-    RepositoryType["Member"] = "member";
-    RepositoryType["NonForks"] = "sources";
-    RepositoryType["Owner"] = "owner";
-    RepositoryType["Private"] = "private";
-    RepositoryType["Public"] = "public";
-})(RepositoryType || (RepositoryType = {}));
-const reviewText = {
-    [GitHubReviewState.Approved]: 'approved this',
-    [GitHubReviewState.ChangesRequested]: 'requested changes',
-    [GitHubReviewState.Commented]: 'commented on this',
-};
-var PullState;
-(function (PullState) {
-    PullState["All"] = "all";
-    PullState["Closed"] = "closed";
-    PullState["Open"] = "open";
-})(PullState || (PullState = {}));
+/***/ }),
 
-;// CONCATENATED MODULE: ./src/utils/misc.ts
+/***/ 40935:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   T: () => (/* binding */ parseInputs)
+/* harmony export */ });
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(37484);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(95122);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_1__);
+
 
 /**
- * Get an emoji based on the age of something.
- * @param {number} hoursAgo - The number of hours ago since something happened.
- * @returns {string}
+ * Parses and validates all inputs required for the GitHub Notifier.
+ *
+ * @returns The parsed and validated inputs for the GitHub Notifier.
  */
-function getAgeBasedEmoji(hoursAgo) {
-    console.debug(`Getting an emoji based on age [${hoursAgo}]`);
-    if (hoursAgo <= 8) {
-        return '';
-    }
-    const emojis = ['red-sus', 'rish_sus'];
-    const random = Math.floor(Math.random() * emojis.length);
-    return ` :${emojis[random]}:`;
-}
-/**
- * Get the relative human readable age of something.
- * @param {number} hoursAgo - The number of hours ago since something happened.
- * @param {boolean} [withAgo=true] - Whether to include the ' ago' suffix when appropriate.
- * @returns {string}
- */
-function getRelativeHumanReadableAge(hoursAgo, withAgo = true) {
-    console.debug('Getting human readable age');
-    const suffix = withAgo ? ' ago' : '';
-    if (hoursAgo < 1) {
-        return 'in the last hour';
-    }
-    else if (hoursAgo < 24) {
-        return `${hoursAgo} ${(0,src.plural)('hour', hoursAgo)}${suffix}`;
-    }
-    const daysAgo = Math.floor(hoursAgo / 24);
-    return `${daysAgo} ${(0,src.plural)('day', daysAgo)}${suffix}`;
-}
-/**
- * Get have or has depending on quantity context.
- * @param {number} number - The number of entities in question.
- * @returns {string}
- */
-function haveOrHas(number) {
-    return number === 1 ? 'has' : 'have';
+function parseInputs() {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)('Parsing inputs...');
+    const githubTokens = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.stringToArray)((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('github-tokens', { required: true }));
+    const channels = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.stringToArray)((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('channels', { required: true }));
+    const slackToken = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('slack-token', { required: true });
+    const withTestData = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('with-test-data');
+    const withArchived = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('with-archived');
+    const withPublic = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('with-public');
+    const withDrafts = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('with-drafts');
+    const withPullReport = false;
+    const withUserMentions = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('with-user-mentions');
+    const repositoryFilter = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.stringToArray)((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('repository-filter'));
+    // https://github.com/actions/github-script/issues/436
+    const baseUrl = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('base-url') || process.env.GITHUB_API_URL;
+    return {
+        githubConfig: {
+            options: {
+                baseUrl,
+            },
+            tokens: githubTokens,
+        },
+        repositoryFilter,
+        slackConfig: {
+            channels,
+            token: slackToken,
+        },
+        withArchived,
+        withDrafts,
+        withPublic,
+        withPullReport,
+        withTestData,
+        withUserMentions,
+    };
 }
 
-;// CONCATENATED MODULE: ./src/utils/github/github-client.ts
+
+/***/ }),
+
+/***/ 32031:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   j: () => (/* binding */ GitHubClient)
+/* harmony export */ });
+/* harmony import */ var _structures_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(28315);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(95122);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(27242);
+/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(28265);
 /* eslint-disable @typescript-eslint/naming-convention */
 
 
@@ -80866,7 +80958,7 @@ class GitHubClient {
      */
     constructor({ options = {}, token }) {
         this.cacheUser = {};
-        this.client = createGitHubClient(token, options);
+        this.client = (0,_structures_js__WEBPACK_IMPORTED_MODULE_0__/* .createGitHubClient */ .LX)(token, options);
     }
     /**
      * Get commits for a pull request.
@@ -80904,7 +80996,7 @@ class GitHubClient {
         });
         let changes = 0;
         fileList.forEach((file) => {
-            if (!ignoreFilenamesForChanges.includes(file.filename)) {
+            if (!_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .ignoreFilenamesForChanges */ .bQ.includes(file.filename)) {
                 changes += file.changes;
             }
         });
@@ -80962,12 +81054,12 @@ class GitHubClient {
                     minutesUntilMerged: [],
                 };
             }
-            const minutesUntilMerged = (0,src.minutesBetweenDates)(pull.createdAt, pull.mergedAt);
+            const minutesUntilMerged = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.minutesBetweenDates)(pull.createdAt, pull.mergedAt);
             if (minutesUntilMerged) {
                 report[key].minutesUntilMerged.push(minutesUntilMerged / 60);
             }
             const minutesUntilFirstReview = firstReview
-                ? (0,src.minutesBetweenDates)(pull.createdAt, new Date(String(firstReview.submitted_at)))
+                ? (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.minutesBetweenDates)(pull.createdAt, new Date(String(firstReview.submitted_at)))
                 : undefined;
             if (minutesUntilFirstReview) {
                 report[key].minutesUntilFirstReview.push(minutesUntilFirstReview / 60);
@@ -80975,7 +81067,7 @@ class GitHubClient {
         }
         let reportString = 'GitHub Notifier Pull Report (Averages)\n';
         for (const [key, item] of Object.entries(report).sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())) {
-            reportString += `${key}:\tHours Until Merged: [${String((0,src.average)(item.minutesUntilMerged)).padStart(5, '0')}],\tHours Until First Review: [${String((0,src.average)(item.minutesUntilFirstReview)).padStart(5, '0')}],\tTotal PRs: [${item.minutesUntilMerged.length}]\n`;
+            reportString += `${key}:\tHours Until Merged: [${String((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.average)(item.minutesUntilMerged)).padStart(5, '0')}],\tHours Until First Review: [${String((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.average)(item.minutesUntilFirstReview)).padStart(5, '0')}],\tTotal PRs: [${item.minutesUntilMerged.length}]\n`;
         }
         return {
             report,
@@ -80987,10 +81079,10 @@ class GitHubClient {
      *
      * @param props Configuration for retrieving pull requests.
      */
-    async getPulls({ oldest = (0,src.snapDate)(new Date(), { months: -6, snap: src.SnapType.Month }), onlyGhReviews = false, repositories, state = PullState.All, withCommits = true, withDrafts, withFilesAndChanges = true, withUser = true, }) {
+    async getPulls({ oldest = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.snapDate)(new Date(), { months: -36, snap: _krauters_utils__WEBPACK_IMPORTED_MODULE_1__.SnapType.Month }), onlyGhReviews = false, repositories, state = _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.All, withCommits = true, withDrafts, withFilesAndChanges = true, withUser = true, }) {
         const org = await this.getOrgName();
         console.log('\n');
-        if (state === PullState.Open) {
+        if (state === _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.Open) {
             console.log(`Getting [${state}] pulls in org [${org}]...`);
         }
         else {
@@ -81006,7 +81098,7 @@ class GitHubClient {
             }, (response, done) => {
                 console.debug(`Paginated response for repository [${repo.name}], status [${response.status}], items [${response.data.length}]`);
                 const found = response.data.find((pull) => new Date(pull.created_at) < oldest);
-                if (found && state !== PullState.Open) {
+                if (found && state !== _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.Open) {
                     console.debug(`Done due to #${found.number} / ${found.html_url}`);
                     done();
                 }
@@ -81021,7 +81113,7 @@ class GitHubClient {
                     continue;
                 }
                 const createdAt = new Date(created_at);
-                const ageInHours = (0,src.getHoursAgo)(createdAt);
+                const ageInHours = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.getHoursAgo)(createdAt);
                 const filesAndChanges = withFilesAndChanges
                     ? await this.getFilesAndChanges({ number, repo: repo.name })
                     : undefined;
@@ -81029,7 +81121,7 @@ class GitHubClient {
                 const requestedReviewers = (await this.getRequestedReviewers(repo.name, number)).users.map((user) => user.login);
                 const reviewReport = await this.getReviewReport(repo.name, number, base.ref, requestedReviewers, onlyGhReviews);
                 pullRequests.push({
-                    age: getRelativeHumanReadableAge(ageInHours),
+                    age: (0,_misc_js__WEBPACK_IMPORTED_MODULE_3__/* .getRelativeHumanReadableAge */ .$2)(ageInHours),
                     ageInHours,
                     closedAt: closed_at ? new Date(closed_at) : undefined,
                     commits: commits?.length,
@@ -81058,7 +81150,7 @@ class GitHubClient {
      *
      * @param props Configuration for retrieving repositories.
      */
-    async getRepositories({ repositoryFilter = [], type = RepositoryType.All, withArchived, withPublic, }) {
+    async getRepositories({ repositoryFilter = [], type = _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .RepositoryType */ .vJ.All, withArchived, withPublic, }) {
         const org = await this.getOrgName();
         console.log(`Getting all repositories in org [${org}]...`);
         const response = await this.client.paginate(this.client.rest.repos.listForOrg, {
@@ -81074,7 +81166,7 @@ class GitHubClient {
             filteredRepos = filteredRepos.filter((repo) => repo.archived === false);
         }
         if (!withPublic) {
-            filteredRepos = filteredRepos.filter((repo) => repo.visibility !== RepositoryType.Public);
+            filteredRepos = filteredRepos.filter((repo) => repo.visibility !== _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .RepositoryType */ .vJ.Public);
         }
         console.log(`Found [${filteredRepos.length}] repositories`);
         console.log(filteredRepos.map((repo) => repo.name));
@@ -81158,9 +81250,9 @@ class GitHubClient {
             return { ghReviews };
         }
         const allowedStates = [
-            GitHubReviewState.Approved,
-            GitHubReviewState.ChangesRequested,
-            GitHubReviewState.Commented,
+            _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .GitHubReviewState */ .R7.Approved,
+            _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .GitHubReviewState */ .R7.ChangesRequested,
+            _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .GitHubReviewState */ .R7.Commented,
         ];
         const reviews = {};
         for (const ghReview of ghReviews ?? []) {
@@ -81180,17 +81272,17 @@ class GitHubClient {
                 continue;
             }
             reviews[login] = {
-                context: reviewText[ghReview.state],
+                context: _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .reviewText */ .aP[ghReview.state],
                 email,
                 login,
-                relativeHumanReadableAge: getRelativeHumanReadableAge((0,src.getHoursAgo)(submittedAt)),
+                relativeHumanReadableAge: (0,_misc_js__WEBPACK_IMPORTED_MODULE_3__/* .getRelativeHumanReadableAge */ .$2)((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.getHoursAgo)(submittedAt)),
                 state: ghReview.state,
                 submittedAt,
             };
             console.log(`Adding/overwriting reviewer [${login}] with state [${ghReview.state}] for pull [${number}]`);
         }
-        const approvals = Object.values(reviews).filter((review) => review.state === GitHubReviewState.Approved).length;
-        const changesRequested = Object.values(reviews).filter((review) => review.state === GitHubReviewState.ChangesRequested).length;
+        const approvals = Object.values(reviews).filter((review) => review.state === _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .GitHubReviewState */ .R7.Approved).length;
+        const changesRequested = Object.values(reviews).filter((review) => review.state === _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .GitHubReviewState */ .R7.ChangesRequested).length;
         const requiredReviewers = await this.getRequiredReviewers(repo, baseRef);
         const approvalsRemaining = Math.max(requiredReviewers - approvals, 0);
         return {
@@ -81221,7 +81313,124 @@ class GitHubClient {
     }
 }
 
-;// CONCATENATED MODULE: ./src/utils/slack/blocks.ts
+
+/***/ }),
+
+/***/ 28315:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   LX: () => (/* binding */ createGitHubClient),
+/* harmony export */   R7: () => (/* binding */ GitHubReviewState),
+/* harmony export */   aP: () => (/* binding */ reviewText),
+/* harmony export */   lT: () => (/* binding */ PullState),
+/* harmony export */   vJ: () => (/* binding */ RepositoryType)
+/* harmony export */ });
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(93228);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_0__);
+
+const createGitHubClient = (token, options = {}) => (0,_actions_github__WEBPACK_IMPORTED_MODULE_0__.getOctokit)(token, options);
+var GitHubReviewState;
+(function (GitHubReviewState) {
+    GitHubReviewState["Approved"] = "APPROVED";
+    GitHubReviewState["ChangesRequested"] = "CHANGES_REQUESTED";
+    GitHubReviewState["Commented"] = "COMMENTED";
+    GitHubReviewState["Dismissed"] = "DISMISSED";
+    GitHubReviewState["Pending"] = "PENDING";
+})(GitHubReviewState || (GitHubReviewState = {}));
+var RepositoryType;
+(function (RepositoryType) {
+    RepositoryType["All"] = "all";
+    RepositoryType["Forks"] = "forks";
+    RepositoryType["Member"] = "member";
+    RepositoryType["NonForks"] = "sources";
+    RepositoryType["Owner"] = "owner";
+    RepositoryType["Private"] = "private";
+    RepositoryType["Public"] = "public";
+})(RepositoryType || (RepositoryType = {}));
+const reviewText = {
+    [GitHubReviewState.Approved]: 'approved this',
+    [GitHubReviewState.ChangesRequested]: 'requested changes',
+    [GitHubReviewState.Commented]: 'commented on this',
+};
+var PullState;
+(function (PullState) {
+    PullState["All"] = "all";
+    PullState["Closed"] = "closed";
+    PullState["Open"] = "open";
+})(PullState || (PullState = {}));
+
+
+/***/ }),
+
+/***/ 28265:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   $2: () => (/* binding */ getRelativeHumanReadableAge),
+/* harmony export */   Ch: () => (/* binding */ haveOrHas),
+/* harmony export */   Fm: () => (/* binding */ getAgeBasedEmoji)
+/* harmony export */ });
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(95122);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_0__);
+
+/**
+ * Get an emoji based on the age of something.
+ * @param {number} hoursAgo - The number of hours ago since something happened.
+ * @returns {string}
+ */
+function getAgeBasedEmoji(hoursAgo) {
+    console.debug(`Getting an emoji based on age [${hoursAgo}]`);
+    if (hoursAgo <= 8) {
+        return '';
+    }
+    const emojis = ['red-sus', 'rish_sus'];
+    const random = Math.floor(Math.random() * emojis.length);
+    return ` :${emojis[random]}:`;
+}
+/**
+ * Get the relative human readable age of something.
+ * @param {number} hoursAgo - The number of hours ago since something happened.
+ * @param {boolean} [withAgo=true] - Whether to include the ' ago' suffix when appropriate.
+ * @returns {string}
+ */
+function getRelativeHumanReadableAge(hoursAgo, withAgo = true) {
+    console.debug('Getting human readable age');
+    const suffix = withAgo ? ' ago' : '';
+    if (hoursAgo < 1) {
+        return 'in the last hour';
+    }
+    else if (hoursAgo < 24) {
+        return `${hoursAgo} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('hour', hoursAgo)}${suffix}`;
+    }
+    const daysAgo = Math.floor(hoursAgo / 24);
+    return `${daysAgo} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('day', daysAgo)}${suffix}`;
+}
+/**
+ * Get have or has depending on quantity context.
+ * @param {number} number - The number of entities in question.
+ * @returns {string}
+ */
+function haveOrHas(number) {
+    return number === 1 ? 'has' : 'have';
+}
+
+
+/***/ }),
+
+/***/ 96114:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   Q: () => (/* binding */ getPullBlocks),
+/* harmony export */   XZ: () => (/* binding */ getLastBlocks),
+/* harmony export */   nh: () => (/* binding */ getFirstBlocks)
+/* harmony export */ });
+/* unused harmony exports getContextMarkdownBlock, getEmojiBlocks */
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(95122);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(27242);
+/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(28265);
 
 
 
@@ -81288,11 +81497,11 @@ function getEmojiBlocks(name, type = 'rich_text_section') {
 /**
  * Get the first Slack block which includes a header and buttons.
  *
- * @param org The GitHub org.
+ * @param orgs The GitHub Organization names.
  * @param header The header text.
  * @param [text] The sub-header text.
  */
-function getFirstBlocks(org, header, text) {
+function getFirstBlocks(orgs, header, text) {
     return [
         {
             text: {
@@ -81304,26 +81513,26 @@ function getFirstBlocks(org, header, text) {
         },
         ...(text ? getContextMarkdownBlock(text) : []),
         {
-            elements: [
+            elements: orgs.flatMap((org) => [
                 {
                     text: {
                         emoji: true,
-                        text: `${org.toUpperCase()} Org`,
+                        text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.capitalize)(org)} Org`,
                         type: 'plain_text',
                     },
                     type: 'button',
-                    url: `${scmUrl}/${org}`,
+                    url: `${_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .scmUrl */ .Hm}/${org}`,
                 },
                 {
                     text: {
                         emoji: true,
-                        text: `${org.toUpperCase()} PRs`,
+                        text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.capitalize)(org)} PRs`,
                         type: 'plain_text',
                     },
                     type: 'button',
-                    url: `${prBaseUrl}${org}`,
+                    url: `${_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .prBaseUrl */ .Fh}${org}`,
                 },
-            ],
+            ]),
             type: 'actions',
         },
     ];
@@ -81345,7 +81554,7 @@ function getLastBlocks(text) {
  */
 async function getPullBlocks(pull, slack, withUserMentions) {
     const { age, ageInHours, commits, draft, filesAndChanges, number, repo, repoUrl, requestedReviewers, reviewReport, title, url, } = pull;
-    let ageBasedEmoji = getAgeBasedEmoji(ageInHours);
+    let ageBasedEmoji = (0,_misc_js__WEBPACK_IMPORTED_MODULE_2__/* .getAgeBasedEmoji */ .Fm)(ageInHours);
     let approvedEmojiBlocks = [];
     let draftEmojiBlocks = [];
     if (draft) {
@@ -81360,12 +81569,12 @@ async function getPullBlocks(pull, slack, withUserMentions) {
     const context = [
         `<${repoUrl}|${repo}>`,
         `created ${age}${ageBasedEmoji}`,
-        commits && `${commits} ${(0,src.plural)('commit', commits)}`,
-        filesAndChanges && `${filesAndChanges.files} ${(0,src.plural)('file', filesAndChanges.files)}`,
-        filesAndChanges && `${filesAndChanges.changes} ${(0,src.plural)('change', filesAndChanges.changes)}`,
-        requiredReviewers && `${requiredReviewers} required ${(0,src.plural)('reviewer', requiredReviewers)}`,
+        commits && `${commits} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('commit', commits)}`,
+        filesAndChanges && `${filesAndChanges.files} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('file', filesAndChanges.files)}`,
+        filesAndChanges && `${filesAndChanges.changes} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('change', filesAndChanges.changes)}`,
+        requiredReviewers && `${requiredReviewers} required ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('reviewer', requiredReviewers)}`,
     ].filter((item) => !!item);
-    const contextBlocks = [];
+    const activityBlocks = [];
     for (const review of Object.values(reviews ?? [])) {
         const { context, email, login: username, relativeHumanReadableAge } = review;
         const slackUser = await slack.getSlackUser({
@@ -81375,7 +81584,7 @@ async function getPullBlocks(pull, slack, withUserMentions) {
         // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         const displayName = slackUser?.profile?.display_name || slackUser?.profile?.real_name_normalized || username;
         const imageUrl = slackUser?.profile?.image_72;
-        contextBlocks.push({
+        activityBlocks.push({
             elements: [
                 {
                     text: ' ',
@@ -81401,8 +81610,8 @@ async function getPullBlocks(pull, slack, withUserMentions) {
             // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
             slackUserIdsOrLogins.push((withUserMentions && slackUser?.id && `<@${slackUser.id}>`) || username);
         }
-        contextBlocks.unshift(...getContextMarkdownBlock((0,src.formatStringList)(slackUserIdsOrLogins) +
-            ` ${haveOrHas(slackUserIdsOrLogins.length)} been requested to review.`, true));
+        activityBlocks.unshift(...getContextMarkdownBlock((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.formatStringList)(slackUserIdsOrLogins) +
+            ` ${(0,_misc_js__WEBPACK_IMPORTED_MODULE_2__/* .haveOrHas */ .Ch)(slackUserIdsOrLogins.length)} been requested to review.`, true));
     }
     return [
         {
@@ -81434,13 +81643,27 @@ async function getPullBlocks(pull, slack, withUserMentions) {
             ],
             type: 'context',
         },
-        ...contextBlocks,
+        ...activityBlocks,
         {
             type: 'divider',
         },
     ];
 }
 
+
+/***/ }),
+
+/***/ 70741:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  Q: () => (/* binding */ SlackClient)
+});
+
+// EXTERNAL MODULE: ./node_modules/@krauters/utils/dist/src/index.js
+var src = __nccwpck_require__(95122);
 // EXTERNAL MODULE: ./node_modules/@slack/web-api/dist/index.js
 var dist = __nccwpck_require__(85105);
 ;// CONCATENATED MODULE: ./src/utils/slack/structures.ts
@@ -81582,17 +81805,28 @@ class SlackClient {
     }
 }
 
-;// CONCATENATED MODULE: ./src/utils/test-data.ts
+
+/***/ }),
+
+/***/ 23930:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   Q: () => (/* binding */ getApprovedPullRequest)
+/* harmony export */ });
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(93228);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(28265);
 
 
 function getApprovedPullRequest() {
-    console.log(`Getting test data for user [${github.context.actor}]`);
+    console.log(`Getting test data for user [${_actions_github__WEBPACK_IMPORTED_MODULE_0__.context.actor}]`);
     return {
-        age: getRelativeHumanReadableAge(48),
+        age: (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .getRelativeHumanReadableAge */ .$2)(48),
         ageInHours: 48,
         commits: 999,
         createdAt: new Date(Date.now() - 24 * 3600 * 1000),
-        createdBy: github.context.actor,
+        createdBy: _actions_github__WEBPACK_IMPORTED_MODULE_0__.context.actor,
         filesAndChanges: {
             changes: 8,
             files: 19,
@@ -81601,7 +81835,7 @@ function getApprovedPullRequest() {
         org: 'krauters',
         repo: 'fake-repo',
         repoUrl: 'https://google.com/#fake-url',
-        requestedReviewers: [github.context.actor],
+        requestedReviewers: [_actions_github__WEBPACK_IMPORTED_MODULE_0__.context.actor],
         reviewReport: {
             approvals: 1,
             approvalsRemaining: 0,
@@ -81614,125 +81848,6 @@ function getApprovedPullRequest() {
         url: 'https://google.com/#fake-url',
         user: undefined,
     };
-}
-
-;// CONCATENATED MODULE: ./src/app.ts
-// https://github.com/actions/github-script
-
-
-
-
-
-
-
-
-
-const { /* homepage */ "TB": homepage, /* name */ "UU": app_name, /* version */ "rE": version } = package_namespaceObject;
-/**
- * Runs the GitHub Notifier to query GitHub for open pull requests and then post messages to Slack channels.
- *
- * @param props Configurable properties of the GitHub Notifier.
- */
-async function run({ githubProps, repositoryFilter, slackProps, withArchived, withDrafts, withPublic, withPullReport, withTestData, withUserMentions, }) {
-    const slack = new SlackClient(slackProps);
-    const gh = new GitHubClient(githubProps);
-    await slack.enforceAppNamePattern(/.*github[\s-_]?notifier$/i);
-    const repositories = await gh.getRepositories({
-        repositoryFilter,
-        type: RepositoryType.All,
-        withArchived,
-        withPublic,
-    });
-    const openPulls = await gh.getPulls({ repositories, state: PullState.Open, withDrafts });
-    let blocks = [];
-    for (const openPull of openPulls) {
-        console.log(`Building Slack blocks from pull request [${openPull.number}]`);
-        blocks = [...blocks, ...(await getPullBlocks(openPull, slack, withUserMentions))];
-    }
-    if (withTestData) {
-        console.log(`With test data: [${withTestData}]`);
-        const testDataPullRequest = getApprovedPullRequest();
-        for (let i = 1; i <= 2; i++) {
-            blocks = [
-                ...blocks,
-                ...(await getPullBlocks({ ...testDataPullRequest, number: i }, slack, withUserMentions)),
-            ];
-        }
-    }
-    const total = openPulls.length;
-    let header = `You've got ${total} open pull ${(0,src.plural)('request', total)}.`;
-    if (total === 0) {
-        header = 'There are no open pull requests! :tada:';
-    }
-    let text;
-    if (repositoryFilter.length > 0) {
-        text = `_<${workflowUrl}|Repository filter>: ${(0,src.formatStringList)(repositoryFilter)}_`;
-    }
-    blocks = [...getFirstBlocks(gh.cacheOrganization.name, header, text), ...blocks];
-    blocks = [
-        ...blocks,
-        ...getLastBlocks([
-            `Run from <${workflowUrl}|${github.context.repo.owner}`,
-            `/${github.context.payload.repository?.name}> (<${workflowLogsUrl}|logs>) using <${homepage}|${app_name}>@<${homepage}/releases/tag/${version}|${version}>`,
-        ].join('')),
-    ];
-    await slack.postMessage(header, blocks);
-    if (withPullReport) {
-        const pulls = await gh.getPulls({
-            oldest: (0,src.snapDate)(new Date(), { months: -12, snap: src.SnapType.Month }),
-            onlyGhReviews: true,
-            repositories,
-            state: PullState.All,
-            withCommits: false,
-            withDrafts: false,
-            withFilesAndChanges: false,
-            withUser: false,
-        });
-        console.log(gh.getPullReport(pulls).reportString);
-    }
-}
-
-;// CONCATENATED MODULE: ./src/main.ts
-
-
-
-/**
- * The main function that gets executed when the action is run.
- */
-async function main() {
-    (0,core.debug)('Starting main...');
-    (0,core.debug)('Parsing inputs...');
-    const ghToken = (0,core.getInput)('github-token', { required: true });
-    const channels = (0,src.stringToArray)((0,core.getInput)('channels', { required: true }));
-    const slackToken = (0,core.getInput)('slack-token', { required: true });
-    const withTestData = (0,core.getBooleanInput)('with-test-data');
-    const withArchived = (0,core.getBooleanInput)('with-archived');
-    const withPublic = (0,core.getBooleanInput)('with-public');
-    const withDrafts = (0,core.getBooleanInput)('with-drafts');
-    const withPullReport = false;
-    const withUserMentions = (0,core.getBooleanInput)('with-user-mentions');
-    const repositoryFilter = (0,src.stringToArray)((0,core.getInput)('repository-filter'));
-    // https://github.com/actions/github-script/issues/436
-    const baseUrl = (0,core.getInput)('base-url') || process.env.GITHUB_API_URL;
-    await run({
-        githubProps: {
-            options: {
-                baseUrl,
-            },
-            token: ghToken,
-        },
-        repositoryFilter,
-        slackProps: {
-            channels,
-            token: slackToken,
-        },
-        withArchived,
-        withDrafts,
-        withPublic,
-        withPullReport,
-        withTestData,
-        withUserMentions,
-    });
 }
 
 
@@ -90238,6 +90353,13 @@ module.exports = /*#__PURE__*/JSON.parse('{"application/1d-interleaved-parityfec
 
 module.exports = {"version":"3.17.0"};
 
+/***/ }),
+
+/***/ 8330:
+/***/ ((module) => {
+
+module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"0.15.0","TB":"https://buymeacoffee.com/coltenkrauter"}');
+
 /***/ })
 
 /******/ });
@@ -90345,6 +90467,18 @@ module.exports = {"version":"3.17.0"};
 /******/ 	};
 /******/ })();
 /******/ 
+/******/ /* webpack/runtime/compat get default export */
+/******/ (() => {
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__nccwpck_require__.n = (module) => {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			() => (module['default']) :
+/******/ 			() => (module);
+/******/ 		__nccwpck_require__.d(getter, { a: getter });
+/******/ 		return getter;
+/******/ 	};
+/******/ })();
+/******/ 
 /******/ /* webpack/runtime/define property getters */
 /******/ (() => {
 /******/ 	// define getter functions for harmony exports
@@ -90380,7 +90514,7 @@ module.exports = {"version":"3.17.0"};
 /******/ // startup
 /******/ // Load entry module and return exports
 /******/ // This entry module used 'module' so it can't be inlined
-/******/ var __webpack_exports__ = __nccwpck_require__(79407);
+/******/ var __webpack_exports__ = __nccwpck_require__(168);
 /******/ __webpack_exports__ = await __webpack_exports__;
 /******/ 
 

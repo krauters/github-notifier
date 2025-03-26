@@ -9,9 +9,9 @@ branding:
 license: ISC
 
 inputs:
-  github-token:
+  github-tokens:
     description: |
-      Fine grained Github token with scopes,
+      Comma-separated list of fine grained Github tokens (one per GitHub organization) with scopes,
       - Administration:read (to list all repos in org)
       - Pull Requests:read (to get PR details for repos)
       - (Organzation) Members:read on all repos (to get GitHub email for Slack user matching)
@@ -27,7 +27,7 @@ inputs:
       - chat:write.customize (to allow the bot to customize the name and avatar)
   channels:
     required: true
-    description: Comma separated list of Slack channel_ids to post to.
+    description: Comma-separated list of Slack channel IDs to post to.
   with-test-data:
     description: Append some test data to the Slack post.
     required: false
@@ -52,7 +52,7 @@ inputs:
     default: true
   repository-filter:
     required: false
-    description: Comma separated list of repositories to scan.
+    description: Comma-separated list of repositories to scan.
   base-url:
     description: Point to different github instance such as https://api.github.com
     required: false

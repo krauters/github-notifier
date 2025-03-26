@@ -9,7 +9,7 @@ import {
 	type GetRepositoriesProps,
 	type GitHubBranchRule,
 	type GitHubBranchRules,
-	type GitHubClientProps,
+	type GitHubProps,
 	type GitHubPullCommits,
 	type GitHubPullRequestedReviewers,
 	type GitHubRepositories,
@@ -27,7 +27,7 @@ import {
 	reviewText,
 } from './structures.js'
 import { average, getHoursAgo, minutesBetweenDates, snapDate, SnapType } from '@krauters/utils'
-import { ignoreFilenamesForChanges } from '../../defaults.js'
+import { ignoreFilenamesForChanges } from '../../constants.js'
 import { getRelativeHumanReadableAge } from '../misc.js'
 
 export class GitHubClient {
@@ -40,7 +40,7 @@ export class GitHubClient {
 	 *
 	 * @param props GitHub client configuration.
 	 */
-	constructor({ options = {}, token }: GitHubClientProps) {
+	constructor({ options = {}, token }: GitHubProps) {
 		this.client = createGitHubClient(token, options)
 	}
 
@@ -195,7 +195,7 @@ export class GitHubClient {
 	 * @param props Configuration for retrieving pull requests.
 	 */
 	async getPulls({
-		oldest = snapDate(new Date(), { months: -6, snap: SnapType.Month }),
+		oldest = snapDate(new Date(), { months: -36, snap: SnapType.Month }),
 		onlyGhReviews = false,
 		repositories,
 		state = PullState.All,
