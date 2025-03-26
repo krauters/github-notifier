@@ -9,7 +9,7 @@ export interface GetUser {
 	username?: string
 }
 
-export interface SlackClientProps {
+export interface SlackConfig {
 	channels: string[]
 	token: string
 }

@@ -100,7 +100,12 @@ export interface GetRepositoriesProps extends ConfigurableGetRepositoriesProps {
 	type: GitHubRepositoryType
 }
 
-export interface GitHubClientProps {
+export interface GitHubConfig {
+	options?: OctokitOptions
+	tokens: string[]
+}
+
+export interface GitHubProps {
 	options?: OctokitOptions
 	token: string
 }

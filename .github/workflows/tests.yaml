@@ -29,7 +29,7 @@ jobs:
       - name: Test Action
         uses: ./
         with:
-          github-token: ${{ secrets.GH_TOKEN_GH_NOTIFIER }}
+          github-tokens: test, ${{ secrets.GH_TOKEN_GH_NOTIFIER }}, ${{ secrets.GH_TOKEN_GH_NOTIFIER }}, ${{ secrets.GH_TOKEN_GH_NOTIFIER_ALT }}
           channels: C07L8EWB389
           slack-token: ${{ secrets.SLACK_TOKEN_GH_NOTIFIER }}
           with-test-data: true

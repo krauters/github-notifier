@@ -1,13 +1,13 @@
 import type {
 	ConfigurableGetPullsProps,
 	ConfigurableGetRepositoriesProps,
-	GitHubClientProps,
+	GitHubConfig,
 } from './utils/github/structures.js'
-import type { SlackClientProps } from './utils/slack/structures.js'
+import type { SlackConfig } from './utils/slack/structures.js'
 
-export interface RunProps extends ConfigurableGetPullsProps, ConfigurableGetRepositoriesProps {
-	githubProps: GitHubClientProps
-	slackProps: SlackClientProps
+export interface InputProps extends ConfigurableGetPullsProps, ConfigurableGetRepositoriesProps {
+	githubConfig: GitHubConfig
+	slackConfig: SlackConfig
 	withPullReport: boolean
 	withTestData: boolean
 	withUserMentions: boolean
