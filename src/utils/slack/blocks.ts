@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import type { KnownBlock, PlainTextElement, RichTextElement } from '@slack/web-api'
 
-import { formatStringList, plural } from '@krauters/utils'
+import { capitalize, formatStringList, plural } from '@krauters/utils'
 
 import type { Pull } from '../github/structures.js'
 import type { SlackClient } from './slack-client.js'
 
-import { prBaseUrl, scmUrl } from '../../defaults.js'
+import { prBaseUrl, scmUrl } from '../../constants.js'
 import { getAgeBasedEmoji, haveOrHas } from '../misc.js'
 
 /**
@@ -78,11 +78,11 @@ export function getEmojiBlocks(name?: string, type = 'rich_text_section'): (Plai
 /**
  * Get the first Slack block which includes a header and buttons.
  *
- * @param org The GitHub org.
+ * @param orgs The GitHub Organization names.
  * @param header The header text.
  * @param [text] The sub-header text.
  */
-export function getFirstBlocks(org: string, header: string, text?: string): KnownBlock[] {
+export function getFirstBlocks(orgs: string[], header: string, text?: string): KnownBlock[] {
 	return [
 		{
 			text: {
@@ -94,11 +94,11 @@ export function getFirstBlocks(org: string, header: string, text?: string): Know
 		},
 		...(text ? getContextMarkdownBlock(text) : []),
 		{
-			elements: [
+			elements: orgs.flatMap((org) => [
 				{
 					text: {
 						emoji: true,
-						text: `${org.toUpperCase()} Org`,
+						text: `${capitalize(org)} Org`,
 						type: 'plain_text',
 					},
 					type: 'button',
@@ -107,13 +107,13 @@ export function getFirstBlocks(org: string, header: string, text?: string): Know
 				{
 					text: {
 						emoji: true,
-						text: `${org.toUpperCase()} PRs`,
+						text: `${capitalize(org)} PRs`,
 						type: 'plain_text',
 					},
 					type: 'button',
 					url: `${prBaseUrl}${org}`,
 				},
-			],
+			]),
 			type: 'actions',
 		},
 	]
@@ -176,7 +176,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 		requiredReviewers && `${requiredReviewers} required ${plural('reviewer', requiredReviewers)}`,
 	].filter((item) => !!item)
 
-	const contextBlocks: KnownBlock[] = []
+	const activityBlocks: KnownBlock[] = []
 	for (const review of Object.values(reviews ?? [])) {
 		const { context, email, login: username, relativeHumanReadableAge } = review
 		const slackUser = await slack.getSlackUser({
@@ -188,7 +188,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 		const displayName = slackUser?.profile?.display_name || slackUser?.profile?.real_name_normalized || username
 		const imageUrl = slackUser?.profile?.image_72
 
-		contextBlocks.push({
+		activityBlocks.push({
 			elements: [
 				{
 					text: ' ',
@@ -215,7 +215,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 			// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 			slackUserIdsOrLogins.push((withUserMentions && slackUser?.id && `<@${slackUser.id}>`) || username)
 		}
-		contextBlocks.unshift(
+		activityBlocks.unshift(
 			...getContextMarkdownBlock(
 				formatStringList(slackUserIdsOrLogins) +
 					` ${haveOrHas(slackUserIdsOrLogins.length)} been requested to review.`,
@@ -254,7 +254,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 			],
 			type: 'context',
 		},
-		...contextBlocks,
+		...activityBlocks,
 		{
 			type: 'divider',
 		},

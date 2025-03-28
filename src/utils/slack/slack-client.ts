@@ -7,7 +7,7 @@ import type { User } from '@slack/web-api/dist/types/response/UsersLookupByEmail
 import { getBatches } from '@krauters/utils'
 import { WebClient } from '@slack/web-api'
 
-import { type GetUser, SlackAppUrl, type SlackClientProps } from './structures.js'
+import { type GetUser, SlackAppUrl, type SlackConfig } from './structures.js'
 
 export class SlackClient {
 	public bot?: Bot
@@ -21,7 +21,7 @@ export class SlackClient {
 	 * @param token Slack token.
 	 * @param channels Slack channel IDs for posting messages in.
 	 */
-	constructor({ channels, token }: SlackClientProps) {
+	constructor({ channels, token }: SlackConfig) {
 		this.client = new WebClient(token)
 		this.channels = channels
 	}

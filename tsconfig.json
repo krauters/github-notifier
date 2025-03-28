@@ -13,6 +13,7 @@
     "allowArbitraryExtensions": true,
     "verbatimModuleSyntax": false,
     "resolveJsonModule": true,
+    "isolatedModules": true
   },
   "include": [
     "src/**/*.ts",

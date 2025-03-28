@@ -43,7 +43,7 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
 
 1. (Optional) Start by creating a repository called `github-notifier`.
     1. Whatever repo you use to host this workflow needs to be able to use GitHub Runners.
-1. [Generate a GitHub token](https://github.com/settings/tokens?type=beta) – You’ll need a fine-grained GitHub token that allows access to either all your repositories or just the ones you want notifications about.
+1. [Generate a GitHub token](https://github.com/settings/tokens?type=beta) – You’ll need a fine-grained GitHub token with resource owner being an organization that allows access to either all your repositories or just the ones you want notifications about.
 
     Here are the specific permissions the token needs:
 
@@ -90,7 +90,7 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
         steps:
         - uses: krauters/github-notifier@main
           with:
-            github-token: ${{ secrets.GH_TOKEN_GH_NOTIFIER }}
+            github-tokens: ${{ secrets.GH_TOKEN_GH_NOTIFIER }}, ${{ secrets.GH_TOKEN_GH_NOTIFIER_FOR_ANOTHER_ORG }}
             channels: C07L8EWB389
             slack-token: ${{ secrets.SLACK_TOKEN_GH_NOTIFIER }}
     ```
@@ -103,7 +103,7 @@ See [action.yaml](./action.yaml) for more detailed information.
 
 | Name                  | Description                                                                                 | Required | Default  |
 |-----------------------|---------------------------------------------------------------------------------------------|----------|----------|
-| `github-token`        | Fine-grained GitHub token with necessary scopes for administration, PR details, and members.| Yes      |          |
+| `github-tokens`       | Comma Comma-separated list of fine grained Github tokens (one per GitHub organization) with scopes for administration, PR details, and members.| Yes      |          |
 | `slack-token`         | Permissions to post to Slack and perform user lookups.                                       | Yes      |          |
 | `channels`            | Comma-separated list of Slack channel IDs to post to.                                        | Yes      |          |
 | `with-archived`       | Include PRs from archived repositories.                                                      | No       | `false`  |

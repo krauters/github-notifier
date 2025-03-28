@@ -1,15 +1,16 @@
 import { debug, getBooleanInput, getInput } from '@actions/core'
 import { stringToArray } from '@krauters/utils'
 
-import { run } from './app.js'
+import type { InputProps } from './structures.js'
 
 /**
- * The main function that gets executed when the action is run.
+ * Parses and validates all inputs required for the GitHub Notifier.
+ *
+ * @returns The parsed and validated inputs for the GitHub Notifier.
  */
-export async function main(): Promise<void> {
-	debug('Starting main...')
+export function parseInputs(): InputProps {
 	debug('Parsing inputs...')
-	const ghToken = getInput('github-token', { required: true })
+	const githubTokens = stringToArray(getInput('github-tokens', { required: true }))
 	const channels = stringToArray(getInput('channels', { required: true }))
 	const slackToken = getInput('slack-token', { required: true })
 	const withTestData = getBooleanInput('with-test-data')
@@ -23,15 +24,15 @@ export async function main(): Promise<void> {
 	// https://github.com/actions/github-script/issues/436
 	const baseUrl = getInput('base-url') || process.env.GITHUB_API_URL
 
-	await run({
-		githubProps: {
+	return {
+		githubConfig: {
 			options: {
 				baseUrl,
 			},
-			token: ghToken,
+			tokens: githubTokens,
 		},
 		repositoryFilter,
-		slackProps: {
+		slackConfig: {
 			channels,
 			token: slackToken,
 		},
@@ -41,5 +42,5 @@ export async function main(): Promise<void> {
 		withPullReport,
 		withTestData,
 		withUserMentions,
-	})
+	}
 }

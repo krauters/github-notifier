@@ -2,6 +2,7 @@ import { plural } from '@krauters/utils'
 
 /**
  * Get an emoji based on the age of something.
+ *
  * @param {number} hoursAgo - The number of hours ago since something happened.
  * @returns {string}
  */
@@ -20,6 +21,7 @@ export function getAgeBasedEmoji(hoursAgo: number): string {
 
 /**
  * Get the relative human readable age of something.
+ *
  * @param {number} hoursAgo - The number of hours ago since something happened.
  * @param {boolean} [withAgo=true] - Whether to include the ' ago' suffix when appropriate.
  * @returns {string}
