@@ -5,6 +5,27 @@ import {
 	getLastBlocks,
 } from '../../../src/utils/slack/blocks.js'
 
+// Jest globals
+import { describe, expect, it } from '@jest/globals'
+
+describe('getFirstBlocks (empty orgs)', () => {
+	it('should only return header (and optional sub-header) blocks when no orgs are provided', () => {
+		const header = 'No Open PRs'
+		const result = getFirstBlocks([], header)
+
+		// only the header block should be present, since no orgs leads to no actions block
+		expect(result).toHaveLength(1)
+		expect(result[0]).toEqual({
+			text: {
+				emoji: true,
+				text: header,
+				type: 'plain_text',
+			},
+			type: 'header',
+		})
+	})
+})
+
 describe('Utils: Slack', () => {
 	describe('Blocks', () => {
 		describe('getContextMarkdownBlock', () => {
