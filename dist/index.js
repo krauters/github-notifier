@@ -81503,7 +81503,7 @@ function getEmojiBlocks(name, type = 'rich_text_section') {
  * @param [text] The sub-header text.
  */
 function getFirstBlocks(orgs, header, text) {
-    return [
+    const headerBlock = [
         {
             text: {
                 emoji: true,
@@ -81512,31 +81512,37 @@ function getFirstBlocks(orgs, header, text) {
             },
             type: 'header',
         },
-        ...(text ? getContextMarkdownBlock(text) : []),
-        {
-            elements: orgs.flatMap((org) => [
-                {
-                    text: {
-                        emoji: true,
-                        text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.capitalize)(org)} Org`,
-                        type: 'plain_text',
-                    },
-                    type: 'button',
-                    url: `${_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .scmUrl */ .Hm}/${org}`,
-                },
-                {
-                    text: {
-                        emoji: true,
-                        text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.capitalize)(org)} PRs`,
-                        type: 'plain_text',
-                    },
-                    type: 'button',
-                    url: `${_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .prBaseUrl */ .Fh}${org}`,
-                },
-            ]),
-            type: 'actions',
-        },
     ];
+    const contextBlock = text ? getContextMarkdownBlock(text) : [];
+    const actionsBlock = [];
+    if (orgs.length > 0) {
+        const actionElements = [];
+        for (const org of orgs) {
+            actionElements.push({
+                text: {
+                    emoji: true,
+                    text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.capitalize)(org)} Org`,
+                    type: 'plain_text',
+                },
+                type: 'button',
+                url: `${_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .scmUrl */ .Hm}/${org}`,
+            });
+            actionElements.push({
+                text: {
+                    emoji: true,
+                    text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.capitalize)(org)} PRs`,
+                    type: 'plain_text',
+                },
+                type: 'button',
+                url: `${_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .prBaseUrl */ .Fh}${org}`,
+            });
+        }
+        actionsBlock.push({
+            elements: actionElements,
+            type: 'actions',
+        });
+    }
+    return [...headerBlock, ...contextBlock, ...actionsBlock];
 }
 /**
  * Get the last Slack block which includes footer markdown.
@@ -90359,7 +90365,7 @@ module.exports = {"version":"3.17.0"};
 /***/ 8330:
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.0.0","TB":"https://buymeacoffee.com/coltenkrauter"}');
+module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.0.1","TB":"https://buymeacoffee.com/coltenkrauter"}');
 
 /***/ })
 

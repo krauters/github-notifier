@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import type { KnownBlock, PlainTextElement, RichTextElement } from '@slack/web-api'
+import type { Button } from '@slack/types'
 
 import { capitalize, formatStringList, plural } from '@krauters/utils'
 
@@ -83,7 +84,7 @@ export function getEmojiBlocks(name?: string, type = 'rich_text_section'): (Plai
  * @param [text] The sub-header text.
  */
 export function getFirstBlocks(orgs: string[], header: string, text?: string): KnownBlock[] {
-	return [
+	const headerBlock: KnownBlock[] = [
 		{
 			text: {
 				emoji: true,
@@ -92,31 +93,41 @@ export function getFirstBlocks(orgs: string[], header: string, text?: string): K
 			},
 			type: 'header',
 		},
-		...(text ? getContextMarkdownBlock(text) : []),
-		{
-			elements: orgs.flatMap((org) => [
-				{
-					text: {
-						emoji: true,
-						text: `${capitalize(org)} Org`,
-						type: 'plain_text',
-					},
-					type: 'button',
-					url: `${scmUrl}/${org}`,
-				},
-				{
-					text: {
-						emoji: true,
-						text: `${capitalize(org)} PRs`,
-						type: 'plain_text',
-					},
-					type: 'button',
-					url: `${prBaseUrl}${org}`,
-				},
-			]),
-			type: 'actions',
-		},
 	]
+
+	const contextBlock: KnownBlock[] = text ? getContextMarkdownBlock(text) : []
+
+	const actionsBlock: KnownBlock[] = []
+	if (orgs.length > 0) {
+		const actionElements: Button[] = []
+		for (const org of orgs) {
+			actionElements.push({
+				text: {
+					emoji: true,
+					text: `${capitalize(org)} Org`,
+					type: 'plain_text',
+				},
+				type: 'button',
+				url: `${scmUrl}/${org}`,
+			})
+			actionElements.push({
+				text: {
+					emoji: true,
+					text: `${capitalize(org)} PRs`,
+					type: 'plain_text',
+				},
+				type: 'button',
+				url: `${prBaseUrl}${org}`,
+			})
+		}
+
+		actionsBlock.push({
+			elements: actionElements,
+			type: 'actions',
+		})
+	}
+
+	return [...headerBlock, ...contextBlock, ...actionsBlock]
 }
 
 /**
