@@ -116,7 +116,7 @@ async function main(): Promise<void> {
 			text = `_<${workflowUrl}|Repository filter>: ${formatStringList(repositoryFilter)}_`
 		}
 
-		const orgs = [...new Set(dedupedPulls.map((pull) => pull.org))]
+		const orgs = [...new Set(results.map((result) => result.org))]
 		blocks = [...getFirstBlocks(orgs, header, text), ...blocks]
 
 		blocks = [

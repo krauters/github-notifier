@@ -80833,7 +80833,7 @@ async function main() {
         if (repositoryFilter.length > 0) {
             text = `_<${_constants_js__WEBPACK_IMPORTED_MODULE_4__/* .workflowUrl */ .pk}|Repository filter>: ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.formatStringList)(repositoryFilter)}_`;
         }
-        const orgs = [...new Set(dedupedPulls.map((pull) => pull.org))];
+        const orgs = [...new Set(results.map((result) => result.org))];
         blocks = [...(0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getFirstBlocks */ .nh)(orgs, header, text), ...blocks];
         blocks = [
             ...blocks,
@@ -90365,7 +90365,7 @@ module.exports = {"version":"3.17.0"};
 /***/ 8330:
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.0.1","TB":"https://buymeacoffee.com/coltenkrauter"}');
+module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.1.0","TB":"https://buymeacoffee.com/coltenkrauter"}');
 
 /***/ })
 
