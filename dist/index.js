@@ -80749,7 +80749,7 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony import */ var _utils_github_client_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(10598);
 /* harmony import */ var _utils_github_structures_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(28315);
 /* harmony import */ var _utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(96114);
-/* harmony import */ var _utils_slack_client_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(90294);
+/* harmony import */ var _utils_slack_client_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(64371);
 /* harmony import */ var _utils_test_data_js__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(23930);
 /* harmony import */ var _input_parser_js__WEBPACK_IMPORTED_MODULE_10__ = __nccwpck_require__(40935);
 // https://github.com/actions/github-script
@@ -80789,7 +80789,7 @@ async function main() {
                 });
                 const org = await client.getOrg();
                 const pulls = await client.getPulls({ repositories, state: _utils_github_structures_js__WEBPACK_IMPORTED_MODULE_6__/* .PullState */ .lT.Open, withDrafts });
-                console.log(`Found ${pulls.length} pulls for ${org.name}`);
+                console.log(`Found [${pulls.length}] pulls for [${org.name}]`);
                 return [...acc, { client, org: org.name, pulls }];
             }
             catch (error) {
@@ -80800,28 +80800,28 @@ async function main() {
         if (results.length === 0) {
             throw new Error('All GitHub tokens failed to process');
         }
-        console.log(`Successfully processed ${results.length} out of ${githubConfig.tokens.length} tokens`);
+        console.log(`Successfully processed [${results.length}] out of [${githubConfig.tokens.length}] tokens`);
         await slack.enforceAppNamePattern(/.*github[\s-_]?notifier$/i);
         const pulls = results.flatMap((result) => result.pulls);
-        console.log(`Found ${pulls.length} pulls`);
-        console.log(pulls);
+        console.log(`Found [${pulls.length}] pulls`);
         // Multiple tokens may have overlapping repository access, deduplicate PRs by org/repo/number
         const dedupedPulls = [...new Map(pulls.map((pull) => [`${pull.org}/${pull.repo}/${pull.number}`, pull]))].map(
         // eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars
         ([_, pull]) => pull);
         let blocks = [];
         for (const pull of dedupedPulls) {
-            console.log(`Building Slack blocks from pull request [${pull.number}]`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Building Slack blocks from pull request [${pull.number}]`);
             blocks = [...blocks, ...(await (0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getPullBlocks */ .Q)(pull, slack, withUserMentions))];
         }
         if (withTestData) {
-            console.log(`With test data: [${withTestData}]`);
-            const testDataPullRequest = (0,_utils_test_data_js__WEBPACK_IMPORTED_MODULE_9__/* .getApprovedPullRequest */ .Q)();
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`With test data [${withTestData}]`);
+            const test1 = (0,_utils_test_data_js__WEBPACK_IMPORTED_MODULE_9__/* .getApprovedPullRequest */ .Qf)();
             for (let i = 1; i <= 2; i++) {
-                blocks = [
-                    ...blocks,
-                    ...(await (0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getPullBlocks */ .Q)({ ...testDataPullRequest, number: i }, slack, withUserMentions)),
-                ];
+                blocks = [...blocks, ...(await (0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getPullBlocks */ .Q)({ ...test1, number: i }, slack, withUserMentions))];
+            }
+            const test2 = (0,_utils_test_data_js__WEBPACK_IMPORTED_MODULE_9__/* .getChangesRequestedPullRequest */ .qu)();
+            for (let i = 1; i <= 2; i++) {
+                blocks = [...blocks, ...(await (0,_utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__/* .getPullBlocks */ .Q)({ ...test2, number: i }, slack, withUserMentions))];
             }
         }
         const total = dedupedPulls.length;
@@ -80844,8 +80844,8 @@ async function main() {
         ];
         await slack.postMessage(header, blocks);
     }
-    catch (err) {
-        console.error('Fatal error:', err);
+    catch (error) {
+        console.error(`Fatal error [${error}]`);
         process.exit(1);
     }
 }
@@ -80907,6 +80907,15 @@ function parseInputs() {
     const withPullReport = false;
     const withUserMentions = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getBooleanInput)('with-user-mentions');
     const repositoryFilter = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.stringToArray)((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('repository-filter'));
+    const userMappings = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.stringToArray)((0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('user-mappings'))
+        .map((entry) => {
+        const [github, slack] = entry.split(':').map((part) => part?.trim());
+        return github && slack ? { githubUsername: github, slackUsername: slack } : null;
+    })
+        .filter((mapping) => mapping !== null);
+    if (userMappings.length > 0) {
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Parsed [${userMappings.length}] GitHub to Slack user mappings`);
+    }
     // https://github.com/actions/github-script/issues/436
     const baseUrl = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('base-url') || process.env.GITHUB_API_URL;
     return {
@@ -80920,6 +80929,7 @@ function parseInputs() {
         slackConfig: {
             channels,
             token: slackToken,
+            userMappings,
         },
         withArchived,
         withDrafts,
@@ -80940,11 +80950,14 @@ function parseInputs() {
 /* harmony export */   j: () => (/* binding */ GitHubClient)
 /* harmony export */ });
 /* harmony import */ var _structures_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(28315);
-/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(95122);
-/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(27242);
-/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(28265);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(37484);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(95122);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(27242);
+/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(28265);
 /* eslint-disable @typescript-eslint/naming-convention */
+
 
 
 
@@ -80977,9 +80990,9 @@ class GitHubClient {
      * @param username A GitHub username.
      */
     async getEmail(username) {
-        console.log(`Getting email from GitHub for username [${username}]...`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting email from GitHub for username [${username}]...`);
         const user = await this.getUser(username);
-        console.log(`User email for [${username}] is [${user?.email}]`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`User email for [${username}] is [${user?.email}]`);
         return user?.email ?? undefined;
     }
     /**
@@ -80995,7 +81008,7 @@ class GitHubClient {
         });
         let changes = 0;
         fileList.forEach((file) => {
-            if (!_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .ignoreFilenamesForChanges */ .bQ.includes(file.filename)) {
+            if (!_constants_js__WEBPACK_IMPORTED_MODULE_3__/* .ignoreFilenamesForChanges */ .bQ.includes(file.filename)) {
                 changes += file.changes;
             }
         });
@@ -81053,12 +81066,12 @@ class GitHubClient {
                     minutesUntilMerged: [],
                 };
             }
-            const minutesUntilMerged = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.minutesBetweenDates)(pull.createdAt, pull.mergedAt);
+            const minutesUntilMerged = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.minutesBetweenDates)(pull.createdAt, pull.mergedAt);
             if (minutesUntilMerged) {
                 report[key].minutesUntilMerged.push(minutesUntilMerged / 60);
             }
             const minutesUntilFirstReview = firstReview
-                ? (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.minutesBetweenDates)(pull.createdAt, new Date(String(firstReview.submitted_at)))
+                ? (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.minutesBetweenDates)(pull.createdAt, new Date(String(firstReview.submitted_at)))
                 : undefined;
             if (minutesUntilFirstReview) {
                 report[key].minutesUntilFirstReview.push(minutesUntilFirstReview / 60);
@@ -81066,7 +81079,7 @@ class GitHubClient {
         }
         let reportString = 'GitHub Notifier Pull Report (Averages)\n';
         for (const [key, item] of Object.entries(report).sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())) {
-            reportString += `${key}:\tHours Until Merged: [${String((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.average)(item.minutesUntilMerged)).padStart(5, '0')}],\tHours Until First Review: [${String((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.average)(item.minutesUntilFirstReview)).padStart(5, '0')}],\tTotal PRs: [${item.minutesUntilMerged.length}]\n`;
+            reportString += `${key}:\tHours Until Merged: [${String((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.average)(item.minutesUntilMerged)).padStart(5, '0')}],\tHours Until First Review: [${String((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.average)(item.minutesUntilFirstReview)).padStart(5, '0')}],\tTotal PRs: [${item.minutesUntilMerged.length}]\n`;
         }
         return {
             report,
@@ -81078,7 +81091,7 @@ class GitHubClient {
      *
      * @param props Configuration for retrieving pull requests.
      */
-    async getPulls({ oldest = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.snapDate)(new Date(), { months: -36, snap: _krauters_utils__WEBPACK_IMPORTED_MODULE_1__.SnapType.Month }), onlyGhReviews = false, repositories, state = _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.All, withCommits = true, withDrafts, withFilesAndChanges = true, withUser = true, }) {
+    async getPulls({ oldest = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.snapDate)(new Date(), { months: -36, snap: _krauters_utils__WEBPACK_IMPORTED_MODULE_2__.SnapType.Month }), onlyGhReviews = false, repositories, state = _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.All, withCommits = true, withDrafts, withFilesAndChanges = true, withUser = true, }) {
         const org = await this.getOrgName();
         console.log('\n');
         if (state === _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.Open) {
@@ -81089,16 +81102,16 @@ class GitHubClient {
         }
         const pullRequests = [];
         for (const repo of repositories) {
-            console.debug(`Getting [${state}] pulls in repository [${repo.name}]...`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting [${state}] pulls in repository [${repo.name}]...`);
             const pulls = await this.client.paginate(this.client.rest.pulls.list, {
                 owner: org,
                 repo: repo.name,
                 state,
             }, (response, done) => {
-                console.debug(`Paginated response for repository [${repo.name}], status [${response.status}], items [${response.data.length}]`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Paginated response for repository [${repo.name}], status [${response.status}], items [${response.data.length}]`);
                 const found = response.data.find((pull) => new Date(pull.created_at) < oldest);
                 if (found && state !== _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.Open) {
-                    console.debug(`Done due to #${found.number} / ${found.html_url}`);
+                    (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Done due to #${found.number} / ${found.html_url}`);
                     done();
                 }
                 return response.data.filter((pull) => new Date(pull.created_at) > oldest);
@@ -81106,13 +81119,13 @@ class GitHubClient {
             console.log(`Found [${pulls.length}] pull in repository [${repo.name}]`);
             for (const pull of pulls) {
                 const { base, closed_at, created_at, draft, html_url, merged_at, number, title, user } = pull;
-                console.log(`Processing pull [${number}]...`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Processing pull [${number}]...`);
                 if (!withDrafts && draft) {
-                    console.log(`withDrafts is [${withDrafts}]`);
+                    (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`withDrafts is [${withDrafts}]`);
                     continue;
                 }
                 const createdAt = new Date(created_at);
-                const ageInHours = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.getHoursAgo)(createdAt);
+                const ageInHours = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.getHoursAgo)(createdAt);
                 const filesAndChanges = withFilesAndChanges
                     ? await this.getFilesAndChanges({ number, repo: repo.name })
                     : undefined;
@@ -81120,7 +81133,7 @@ class GitHubClient {
                 const requestedReviewers = (await this.getRequestedReviewers(repo.name, number)).users.map((user) => user.login);
                 const reviewReport = await this.getReviewReport(repo.name, number, base.ref, requestedReviewers, onlyGhReviews);
                 pullRequests.push({
-                    age: (0,_misc_js__WEBPACK_IMPORTED_MODULE_3__/* .getRelativeHumanReadableAge */ .$2)(ageInHours),
+                    age: (0,_misc_js__WEBPACK_IMPORTED_MODULE_4__/* .getRelativeHumanReadableAge */ .$2)(ageInHours),
                     ageInHours,
                     closedAt: closed_at ? new Date(closed_at) : undefined,
                     commits: commits?.length,
@@ -81139,7 +81152,7 @@ class GitHubClient {
                     url: html_url,
                     user: withUser ? await this.getUser(String(user?.login)) : undefined,
                 });
-                console.log(`Added pull [${number}] to response`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Added pull [${number}] to response`);
             }
         }
         return pullRequests;
@@ -81168,7 +81181,7 @@ class GitHubClient {
             filteredRepos = filteredRepos.filter((repo) => repo.visibility !== _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .RepositoryType */ .vJ.Public);
         }
         console.log(`Found [${filteredRepos.length}] repositories`);
-        console.log(filteredRepos.map((repo) => repo.name));
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(JSON.stringify(filteredRepos.map((repo) => repo.name), null, 2));
         return filteredRepos;
     }
     /**
@@ -81193,7 +81206,7 @@ class GitHubClient {
      */
     async getRequiredReviewers(repo, branchName) {
         const org = await this.getOrgName();
-        console.log(`Getting branch rules for repository [${repo}] branch [${branchName}]...`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting branch rules for repository [${repo}] branch [${branchName}]...`);
         try {
             const rules = await this.client.paginate(this.client.rest.repos.getBranchRules, {
                 branch: branchName,
@@ -81207,7 +81220,7 @@ class GitHubClient {
             });
             let branchRequiredReviewers = 0;
             if (branch.data.protection.enabled) {
-                console.log(`
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`
 					The "rest.repos.getBranchRules" endpoint doesn't reliably return 
 					repository-level branch protections, so we are also checking the
 					"branch.data.protection_url" endpoint.
@@ -81222,7 +81235,7 @@ class GitHubClient {
                 rule.parameters !== null &&
                 'required_approving_review_count' in rule.parameters)
                 .map((rule) => Number(rule.parameters.required_approving_review_count));
-            console.log(`Required reviewers for repository [${repo}] branch [${branchName}] is [${requiredReviewers}]`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Required reviewers for repository [${repo}] branch [${branchName}] is [${requiredReviewers}]`);
             return Math.max(...requiredReviewers, branchRequiredReviewers);
         }
         catch (error) {
@@ -81257,28 +81270,28 @@ class GitHubClient {
         for (const ghReview of ghReviews ?? []) {
             const login = ghReview?.user?.login;
             if (!login || !allowedStates.includes(ghReview.state)) {
-                console.debug(`Ignoring review because state [${ghReview.state}] is not one of [${allowedStates.join(', ')}]`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Ignoring review because state [${ghReview.state}] is not one of [${allowedStates.join(', ')}]`);
                 continue;
             }
             if (requestedReviewers.includes(login)) {
-                console.debug(`Ignoring review with state [${ghReview.state}] because user with login [${login}] was requested as a reviewer so previous reviews are no longer valid`);
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Ignoring review with state [${ghReview.state}] because user with login [${login}] was requested as a reviewer so previous reviews are no longer valid`);
                 continue;
             }
             const email = await this.getEmail(login);
             const submittedAt = new Date(String(ghReview.submitted_at));
             if (login in reviews && reviews[login].submittedAt.valueOf() > submittedAt.valueOf()) {
-                console.debug('Ignoring old review');
+                (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)('Ignoring old review');
                 continue;
             }
             reviews[login] = {
                 context: _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .reviewText */ .aP[ghReview.state],
                 email,
                 login,
-                relativeHumanReadableAge: (0,_misc_js__WEBPACK_IMPORTED_MODULE_3__/* .getRelativeHumanReadableAge */ .$2)((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.getHoursAgo)(submittedAt)),
+                relativeHumanReadableAge: (0,_misc_js__WEBPACK_IMPORTED_MODULE_4__/* .getRelativeHumanReadableAge */ .$2)((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.getHoursAgo)(submittedAt)),
                 state: ghReview.state,
                 submittedAt,
             };
-            console.log(`Adding/overwriting reviewer [${login}] with state [${ghReview.state}] for pull [${number}]`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Adding/overwriting reviewer [${login}] with state [${ghReview.state}] for pull [${number}]`);
         }
         const approvals = Object.values(reviews).filter((review) => review.state === _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .GitHubReviewState */ .R7.Approved).length;
         const changesRequested = Object.values(reviews).filter((review) => review.state === _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .GitHubReviewState */ .R7.ChangesRequested).length;
@@ -81299,14 +81312,14 @@ class GitHubClient {
      * @param username A GitHub username.
      */
     async getUser(username) {
-        console.log(`Getting user from GitHub for username [${username}]...`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting user from GitHub for username [${username}]...`);
         if (username in this.cacheUser) {
-            console.log('Found cache hit!');
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)('Found cache hit!');
             return this.cacheUser[username];
         }
-        console.log('No hit in cache, making request...');
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)('No hit in cache, making request...');
         const { data: user } = await this.client.rest.users.getByUsername({ username });
-        console.log('Storing result in cache...');
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)('Storing result in cache...');
         this.cacheUser[username] = user;
         return user;
     }
@@ -81372,6 +81385,9 @@ var PullState;
 /* harmony export */ });
 /* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(95122);
 /* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(37484);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_1__);
+
 
 /**
  * Get an emoji based on the age of something.
@@ -81380,11 +81396,11 @@ var PullState;
  * @returns {string}
  */
 function getAgeBasedEmoji(hoursAgo) {
-    console.debug(`Getting an emoji based on age [${hoursAgo}]`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting an emoji based on age [${hoursAgo}]`);
     if (hoursAgo <= 8) {
         return '';
     }
-    const emojis = ['red-sus', 'rish_sus'];
+    const emojis = ['watch'];
     const random = Math.floor(Math.random() * emojis.length);
     return ` :${emojis[random]}:`;
 }
@@ -81396,7 +81412,7 @@ function getAgeBasedEmoji(hoursAgo) {
  * @returns {string}
  */
 function getRelativeHumanReadableAge(hoursAgo, withAgo = true) {
-    console.debug('Getting human readable age');
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)('Getting human readable age');
     const suffix = withAgo ? ' ago' : '';
     if (hoursAgo < 1) {
         return 'in the last hour';
@@ -81428,10 +81444,13 @@ function haveOrHas(number) {
 /* harmony export */   nh: () => (/* binding */ getFirstBlocks)
 /* harmony export */ });
 /* unused harmony exports getContextMarkdownBlock, getEmojiBlocks */
-/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(95122);
-/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(27242);
-/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(28265);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(37484);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(95122);
+/* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(27242);
+/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(28265);
+
 
 
 
@@ -81521,20 +81540,20 @@ function getFirstBlocks(orgs, header, text) {
             actionElements.push({
                 text: {
                     emoji: true,
-                    text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.capitalize)(org)} Org`,
+                    text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.capitalize)(org)} Org`,
                     type: 'plain_text',
                 },
                 type: 'button',
-                url: `${_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .scmUrl */ .Hm}/${org}`,
+                url: `${_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .scmUrl */ .Hm}/${org}`,
             });
             actionElements.push({
                 text: {
                     emoji: true,
-                    text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.capitalize)(org)} PRs`,
+                    text: `${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.capitalize)(org)} PRs`,
                     type: 'plain_text',
                 },
                 type: 'button',
-                url: `${_constants_js__WEBPACK_IMPORTED_MODULE_1__/* .prBaseUrl */ .Fh}${org}`,
+                url: `${_constants_js__WEBPACK_IMPORTED_MODULE_2__/* .prBaseUrl */ .Fh}${org}`,
             });
         }
         actionsBlock.push({
@@ -81561,7 +81580,7 @@ function getLastBlocks(text) {
  */
 async function getPullBlocks(pull, slack, withUserMentions) {
     const { age, ageInHours, commits, draft, filesAndChanges, number, repo, repoUrl, requestedReviewers, reviewReport, title, url, } = pull;
-    let ageBasedEmoji = (0,_misc_js__WEBPACK_IMPORTED_MODULE_2__/* .getAgeBasedEmoji */ .Fm)(ageInHours);
+    let ageBasedEmoji = (0,_misc_js__WEBPACK_IMPORTED_MODULE_3__/* .getAgeBasedEmoji */ .Fm)(ageInHours);
     let approvedEmojiBlocks = [];
     let draftEmojiBlocks = [];
     if (draft) {
@@ -81576,14 +81595,15 @@ async function getPullBlocks(pull, slack, withUserMentions) {
     const context = [
         `<${repoUrl}|${repo}>`,
         `created ${age}${ageBasedEmoji}`,
-        commits && `${commits} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('commit', commits)}`,
-        filesAndChanges && `${filesAndChanges.files} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('file', filesAndChanges.files)}`,
-        filesAndChanges && `${filesAndChanges.changes} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('change', filesAndChanges.changes)}`,
-        requiredReviewers && `${requiredReviewers} required ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.plural)('reviewer', requiredReviewers)}`,
+        commits && `${commits} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.plural)('commit', commits)}`,
+        filesAndChanges && `${filesAndChanges.files} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.plural)('file', filesAndChanges.files)}`,
+        filesAndChanges && `${filesAndChanges.changes} ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.plural)('change', filesAndChanges.changes)}`,
+        requiredReviewers && `${requiredReviewers} required ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.plural)('reviewer', requiredReviewers)}`,
     ].filter((item) => !!item);
     const activityBlocks = [];
     for (const review of Object.values(reviews ?? [])) {
         const { context, email, login: username, relativeHumanReadableAge } = review;
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Getting Slack user for reviewer [${username}] with email [${email}]`);
         const slackUser = await slack.getUser({
             email,
             username,
@@ -81616,11 +81636,12 @@ async function getPullBlocks(pull, slack, withUserMentions) {
     if (requestedReviewers.length) {
         const slackUserIdsOrLogins = [];
         for (const username of requestedReviewers) {
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.debug)(`Getting Slack user for requested reviewer [${username}]`);
             const slackUser = await slack.getUser({ username });
             slackUserIdsOrLogins.push((withUserMentions && slackUser?.id && `<@${slackUser.id}>`) || username);
         }
-        activityBlocks.unshift(...getContextMarkdownBlock((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.formatStringList)(slackUserIdsOrLogins) +
-            ` ${(0,_misc_js__WEBPACK_IMPORTED_MODULE_2__/* .haveOrHas */ .Ch)(slackUserIdsOrLogins.length)} been requested to review.`, true));
+        activityBlocks.unshift(...getContextMarkdownBlock((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_1__.formatStringList)(slackUserIdsOrLogins) +
+            ` ${(0,_misc_js__WEBPACK_IMPORTED_MODULE_3__/* .haveOrHas */ .Ch)(slackUserIdsOrLogins.length)} been requested to review.`, true));
     }
     return [
         {
@@ -81662,7 +81683,7 @@ async function getPullBlocks(pull, slack, withUserMentions) {
 
 /***/ }),
 
-/***/ 90294:
+/***/ 64371:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -81671,6 +81692,8 @@ __nccwpck_require__.d(__webpack_exports__, {
   Q: () => (/* binding */ SlackClient)
 });
 
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(37484);
 // EXTERNAL MODULE: ./node_modules/@krauters/utils/dist/src/index.js
 var src = __nccwpck_require__(95122);
 // EXTERNAL MODULE: ./node_modules/@slack/web-api/dist/index.js
@@ -81679,10 +81702,121 @@ var dist = __nccwpck_require__(85105);
 var SlackAppUrl;
 (function (SlackAppUrl) {
     SlackAppUrl["Prefix"] = "https://api.slack.com/apps";
-    SlackAppUrl["SuffixDisplayInfo"] = "general#display_info_form";
+    SlackAppUrl["SuffixDisplayInfo"] = "general";
 })(SlackAppUrl || (SlackAppUrl = {}));
 
+;// CONCATENATED MODULE: ./src/utils/slack/user-matchers.ts
+
+function customMappingMatcher(githubUsername, slackUsername) {
+    return {
+        check: (user) => user.name === slackUsername ||
+            user.profile?.display_name === slackUsername ||
+            user.profile?.real_name === slackUsername,
+        description: 'custom user mapping',
+        log: (user) => {
+            (0,core.debug)(`Match found by custom mapping: GitHub username [${githubUsername}] to Slack username [${slackUsername}] for user [${user.id}]`);
+        },
+    };
+}
+function displayNameMatcher(username) {
+    return {
+        check: (user) => user.profile?.display_name === username,
+        description: 'user.profile.display_name fields',
+        log: (user) => {
+            (0,core.debug)(`Match found by username [${username}] matching Slack displayName [${user.profile?.display_name}]`);
+        },
+    };
+}
+function emailContainsMatcher(username) {
+    return {
+        check: (user) => String(user.profile?.email ?? '').includes(username),
+        description: 'user.profile.email contains check',
+        log: (user) => {
+            (0,core.debug)(`Match found by username [${username}] contained in Slack email [${user.profile?.email}]`);
+        },
+    };
+}
+function emailMatcher(email) {
+    return {
+        check: (user) => user.profile?.email === email,
+        description: 'user.profile.email fields',
+        log: (user) => {
+            (0,core.debug)(`Match found by email [${email}] with Slack email [${user.profile?.email}]`);
+        },
+    };
+}
+function realNameMatcher(username) {
+    return {
+        check: (user) => user.profile?.real_name === username,
+        description: 'user.profile.real_name fields',
+        log: (user) => {
+            (0,core.debug)(`Match found by username [${username}] matching Slack realName [${user.profile?.real_name}]`);
+        },
+    };
+}
+function userIdMatcher(userId) {
+    return {
+        check: (user) => user.id === userId,
+        description: 'user.id fields',
+        log: (user) => {
+            (0,core.debug)(`Match found by userId [${userId}] with Slack userId [${user.id}]`);
+        },
+    };
+}
+const createUserMatchers = ({ email, userId, userMappings = [], username }) => {
+    const matchers = [];
+    // First, add the user mapping matchers if a username is provided in action.yaml
+    if (username && userMappings.length > 0) {
+        const matchingMappings = userMappings.filter((mapping) => mapping.githubUsername === username);
+        if (matchingMappings.length > 0) {
+            (0,core.debug)(`Found [${matchingMappings.length}] custom mappings for GitHub username [${username}]`);
+            // Add a matcher for each mapping
+            matchingMappings.forEach((mapping) => {
+                matchers.push(customMappingMatcher(username, mapping.slackUsername));
+            });
+        }
+    }
+    // Next, add the standard matchers
+    if (userId) {
+        matchers.push(userIdMatcher(userId));
+    }
+    if (email) {
+        matchers.push(emailMatcher(email));
+    }
+    if (username) {
+        matchers.push(emailContainsMatcher(username));
+        matchers.push(displayNameMatcher(username));
+        matchers.push(realNameMatcher(username));
+    }
+    return matchers;
+};
+const logFailedMatches = ({ email, userId, userMappings = [], username }, usersCount) => {
+    console.log(`No user match found after checking against [${usersCount}] users`);
+    // Log mapping failures
+    if (username && userMappings.length > 0) {
+        const matchingMappings = userMappings.filter((mapping) => mapping.githubUsername === username);
+        if (matchingMappings.length > 0) {
+            (0,core.debug)(`WARNING: Custom mappings for GitHub username [${username}] were defined but no matching Slack users were found:`);
+            // Show each mapping that failed
+            matchingMappings.forEach((mapping) => {
+                (0,core.debug)(`  - Mapped to Slack username [${mapping.slackUsername}] but no Slack user with this name/display_name/real_name was found`);
+            });
+            (0,core.debug)(`Attempted to fall back to standard matching methods`);
+        }
+    }
+    // Log standard matchers that were tried
+    if (userId)
+        (0,core.debug)(`Tried to match userId [${userId}] against Slack user.id fields`);
+    if (email)
+        (0,core.debug)(`Tried to match email [${email}] against Slack user.profile.email fields`);
+    if (username)
+        (0,core.debug)(`Tried to match username [${username}] against Slack user.profile.email (contains), display_name and real_name fields`);
+    (0,core.debug)(`Since no Slack user match found, unable to @mention user or use their profile image`);
+};
+
 ;// CONCATENATED MODULE: ./src/utils/slack/client.ts
+
+
 
 
 
@@ -81692,10 +81826,12 @@ class SlackClient {
      *
      * @param token Slack token.
      * @param channels Slack channel IDs for posting messages in.
+     * @param userMappings User mappings for the Slack client.
      */
-    constructor({ channels, token }) {
+    constructor({ channels, token, userMappings = [] }) {
         this.client = new dist.WebClient(token);
         this.channels = channels;
+        this.userMappings = userMappings;
     }
     /**
      * Ensure app name pattern.
@@ -81728,7 +81864,7 @@ class SlackClient {
                     this.users = [...this.users, ...result.members];
                 }
                 cursor = result.response_metadata?.next_cursor;
-                console.log(`Got [${result.members?.length}] users from Slack`);
+                (0,core.debug)(`Got [${result.members?.length}] users from Slack`);
             } while (cursor);
             console.log(`Got a total of [${this.users.length}] active users from Slack`);
             return this.users;
@@ -81762,46 +81898,27 @@ class SlackClient {
      * @param [botId] The botId for the bot to find.
      */
     async getUser({ email, userId, username }) {
-        console.log(`Getting Slack UserId for email [${email}], username [${username}], and userId [${userId}]...`);
+        (0,core.debug)(`Getting Slack UserId for email [${email}], username [${username}], and userId [${userId}]...`);
         const users = this.users ?? (await this.getAllusers());
-        // Define matching functions for better readability and extensibility
-        const matchById = (user) => userId && user.id === userId;
-        const matchByEmail = (user) => email && user.profile?.email === email;
-        const matchByEmailContainsUsername = (user) => username && String(user.profile?.email ?? '').includes(username);
-        const matchByDisplayName = (user) => username && user.profile?.display_name === username;
-        const matchByRealName = (user) => username && user.profile?.real_name === username;
-        const user = users.find((user) => {
-            const idMatch = matchById(user);
-            const emailMatch = matchByEmail(user);
-            const emailContainsUsernameMatch = matchByEmailContainsUsername(user);
-            const displayNameMatch = matchByDisplayName(user);
-            const realNameMatch = matchByRealName(user);
-            // Log the first match attempt that succeeds for debugging
-            if (idMatch && userId)
-                console.log(`Match found by userId [${userId}] with Slack userId [${user.id}]`);
-            else if (emailMatch && email)
-                console.log(`Match found by email [${email}] with Slack email [${user.profile?.email}]`);
-            else if (emailContainsUsernameMatch && username)
-                console.log(`Match found by username [${username}] contained in Slack email [${user.profile?.email}]`);
-            else if (displayNameMatch && username)
-                console.log(`Match found by username [${username}] matching Slack display_name [${user.profile?.display_name}]`);
-            else if (realNameMatch && username)
-                console.log(`Match found by username [${username}] matching Slack real_name [${user.profile?.real_name}]`);
-            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-            return idMatch || emailMatch || emailContainsUsernameMatch || displayNameMatch || realNameMatch;
+        const matchParams = { email, userId, userMappings: this.userMappings, username };
+        const matchers = createUserMatchers(matchParams);
+        // Find the first user that matches any of our criteria
+        const matchedUser = users.find((slackUser) => {
+            // Find a matching criteria for this Slack user, if any
+            const matchedCriteria = matchers.find((criteria) => criteria.check(slackUser));
+            // If we found a match, log it
+            if (matchedCriteria) {
+                matchedCriteria.log(slackUser);
+                return true;
+            }
+            return false;
         });
-        if (user) {
-            console.log(`User found with userId [${user.id}]`);
-            return user;
+        if (matchedUser) {
+            (0,core.debug)(`User found with userId [${matchedUser.id}]`);
+            return matchedUser;
         }
-        console.log(`No user match found after checking against [${users.length}] users`);
-        if (userId)
-            console.log(`Tried to match userId [${userId}] against Slack user.id fields`);
-        if (email)
-            console.log(`Tried to match email [${email}] against Slack user.profile.email fields`);
-        if (username)
-            console.log(`Tried to match username [${username}] against Slack user.profile.email (contains), display_name and real_name fields`);
-        console.log(`Since no Slack user match found, unable to @mention user or use their profile image`);
+        // No match found, log the failure
+        logFailedMatches(matchParams, users.length);
     }
     /**
      * Post a message with blocks to Slack channels.
@@ -81825,9 +81942,9 @@ class SlackClient {
                     unfurl_media: false,
                     username: 'GitHub Notifier',
                 };
-                console.dir(payload, { depth: null });
+                (0,core.debug)(JSON.stringify(payload, null, 2));
                 const response = await this.client.chat.postMessage(payload);
-                console.dir(response, { depth: null });
+                (0,core.debug)(JSON.stringify(response, null, 2));
                 console.log(`Posted batch [${batchNumber++}] to Slack channel [${channel}] with success [${response.ok}]`);
             }
         }
@@ -81841,17 +81958,22 @@ class SlackClient {
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   Q: () => (/* binding */ getApprovedPullRequest)
+/* harmony export */   Qf: () => (/* binding */ getApprovedPullRequest),
+/* harmony export */   qu: () => (/* binding */ getChangesRequestedPullRequest)
 /* harmony export */ });
+/* unused harmony export getMultipleReviewsPullRequest */
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(93228);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(28265);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(37484);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _misc_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(28265);
+
 
 
 function getApprovedPullRequest() {
-    console.log(`Getting test data for user [${_actions_github__WEBPACK_IMPORTED_MODULE_0__.context.actor}]`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting test data for user [${_actions_github__WEBPACK_IMPORTED_MODULE_0__.context.actor}]`);
     return {
-        age: (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .getRelativeHumanReadableAge */ .$2)(48),
+        age: (0,_misc_js__WEBPACK_IMPORTED_MODULE_2__/* .getRelativeHumanReadableAge */ .$2)(48),
         ageInHours: 48,
         commits: 999,
         createdAt: new Date(Date.now() - 24 * 3600 * 1000),
@@ -81875,6 +81997,102 @@ function getApprovedPullRequest() {
         },
         title: 'Testing',
         url: 'https://google.com/#fake-url',
+        user: undefined,
+    };
+}
+function getChangesRequestedPullRequest() {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting changes requested test data for user [${_actions_github__WEBPACK_IMPORTED_MODULE_0__.context.actor}]`);
+    // Create a reviewer name different from the current user
+    const reviewerName = 'reviewer1';
+    return {
+        age: (0,_misc_js__WEBPACK_IMPORTED_MODULE_2__/* .getRelativeHumanReadableAge */ .$2)(24),
+        ageInHours: 24,
+        commits: 5,
+        createdAt: new Date(Date.now() - 24 * 3600 * 1000),
+        createdBy: _actions_github__WEBPACK_IMPORTED_MODULE_0__.context.actor,
+        filesAndChanges: {
+            changes: 15,
+            files: 4,
+        },
+        number: 54321,
+        org: 'krauters',
+        repo: 'feedback-repo',
+        repoUrl: 'https://github.com/krauters/feedback-repo',
+        requestedReviewers: [],
+        reviewReport: {
+            approvals: 0,
+            approvalsRemaining: 1,
+            changesRequested: 1,
+            ghReviews: [],
+            requiredReviewers: 1,
+            reviews: {
+                [reviewerName]: {
+                    context: 'requested changes',
+                    email: `${reviewerName}@example.com`,
+                    login: reviewerName,
+                    relativeHumanReadableAge: (0,_misc_js__WEBPACK_IMPORTED_MODULE_2__/* .getRelativeHumanReadableAge */ .$2)(2),
+                    state: 'CHANGES_REQUESTED',
+                    submittedAt: new Date(Date.now() - 2 * 3600 * 1000),
+                },
+            },
+        },
+        title: 'Feature with requested changes',
+        url: 'https://github.com/krauters/feedback-repo/pull/54321',
+        user: undefined,
+    };
+}
+function getMultipleReviewsPullRequest() {
+    debug(`Getting multiple reviews test data for user [${context.actor}]`);
+    return {
+        age: getRelativeHumanReadableAge(72),
+        ageInHours: 72,
+        commits: 12,
+        createdAt: new Date(Date.now() - 72 * 3600 * 1000),
+        createdBy: context.actor,
+        filesAndChanges: {
+            changes: 47,
+            files: 8,
+        },
+        number: 9876,
+        org: 'krauters',
+        repo: 'complex-repo',
+        repoUrl: 'https://github.com/krauters/complex-repo',
+        requestedReviewers: ['waiting-reviewer'],
+        reviewReport: {
+            approvals: 1,
+            approvalsRemaining: 1,
+            changesRequested: 1,
+            ghReviews: [],
+            requiredReviewers: 2,
+            reviews: {
+                reviewer1: {
+                    context: 'approved',
+                    email: 'reviewer1@example.com',
+                    login: 'reviewer1',
+                    relativeHumanReadableAge: getRelativeHumanReadableAge(10),
+                    state: 'APPROVED',
+                    submittedAt: new Date(Date.now() - 10 * 3600 * 1000),
+                },
+                reviewer2: {
+                    context: 'requested changes',
+                    email: 'reviewer2@example.com',
+                    login: 'reviewer2',
+                    relativeHumanReadableAge: getRelativeHumanReadableAge(5),
+                    state: 'CHANGES_REQUESTED',
+                    submittedAt: new Date(Date.now() - 5 * 3600 * 1000),
+                },
+                reviewer3: {
+                    context: 'commented',
+                    email: 'reviewer3@example.com',
+                    login: 'reviewer3',
+                    relativeHumanReadableAge: getRelativeHumanReadableAge(1),
+                    state: 'COMMENTED',
+                    submittedAt: new Date(Date.now() - 1 * 3600 * 1000),
+                },
+            },
+        },
+        title: 'Complex feature with multiple reviews',
+        url: 'https://github.com/krauters/complex-repo/pull/9876',
         user: undefined,
     };
 }
@@ -90387,7 +90605,7 @@ module.exports = {"version":"3.17.0"};
 /***/ 8330:
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.2.1","TB":"https://buymeacoffee.com/coltenkrauter"}');
+module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.3.0","TB":"https://buymeacoffee.com/coltenkrauter"}');
 
 /***/ })
 

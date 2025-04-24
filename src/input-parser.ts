@@ -2,6 +2,7 @@ import { debug, getBooleanInput, getInput } from '@actions/core'
 import { stringToArray } from '@krauters/utils'
 
 import type { InputProps } from './structures.js'
+import type { UserMapping } from './utils/slack/structures.js'
 
 /**
  * Parses and validates all inputs required for the GitHub Notifier.
@@ -21,6 +22,18 @@ export function parseInputs(): InputProps {
 	const withUserMentions = getBooleanInput('with-user-mentions')
 	const repositoryFilter = stringToArray(getInput('repository-filter'))
 
+	const userMappings = stringToArray(getInput('user-mappings'))
+		.map((entry) => {
+			const [github, slack] = entry.split(':').map((part) => part?.trim())
+
+			return github && slack ? { githubUsername: github, slackUsername: slack } : null
+		})
+		.filter((mapping): mapping is UserMapping => mapping !== null)
+
+	if (userMappings.length > 0) {
+		debug(`Parsed [${userMappings.length}] GitHub to Slack user mappings`)
+	}
+
 	// https://github.com/actions/github-script/issues/436
 	const baseUrl = getInput('base-url') || process.env.GITHUB_API_URL
 
@@ -35,6 +48,7 @@ export function parseInputs(): InputProps {
 		slackConfig: {
 			channels,
 			token: slackToken,
+			userMappings,
 		},
 		withArchived,
 		withDrafts,

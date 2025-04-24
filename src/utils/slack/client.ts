@@ -4,15 +4,18 @@ import type { Bot } from '@slack/web-api/dist/types/response/BotsInfoResponse.js
 import type { Member } from '@slack/web-api/dist/types/response/UsersListResponse.js'
 import type { User } from '@slack/web-api/dist/types/response/UsersLookupByEmailResponse.js'
 
+import { debug } from '@actions/core'
 import { getBatches } from '@krauters/utils'
 import { WebClient } from '@slack/web-api'
 
-import { type GetUser, SlackAppUrl, type SlackConfig } from './structures.js'
+import { type GetUser, SlackAppUrl, type SlackConfig, type UserMapping } from './structures.js'
+import { createUserMatchers, logFailedMatches, type MatchParams } from './user-matchers.js'
 
 export class SlackClient {
 	public bot?: Bot
 	private channels: string[]
 	private client: WebClient
+	private userMappings: UserMapping[]
 	private users: undefined | User[]
 
 	/**
@@ -20,10 +23,12 @@ export class SlackClient {
 	 *
 	 * @param token Slack token.
 	 * @param channels Slack channel IDs for posting messages in.
+	 * @param userMappings User mappings for the Slack client.
 	 */
-	constructor({ channels, token }: SlackConfig) {
+	constructor({ channels, token, userMappings = [] }: SlackConfig) {
 		this.client = new WebClient(token)
 		this.channels = channels
+		this.userMappings = userMappings
 	}
 
 	/**
@@ -62,7 +67,7 @@ export class SlackClient {
 					this.users = [...this.users, ...result.members]
 				}
 				cursor = result.response_metadata?.next_cursor
-				console.log(`Got [${result.members?.length}] users from Slack`)
+				debug(`Got [${result.members?.length}] users from Slack`)
 			} while (cursor)
 
 			console.log(`Got a total of [${this.users.length}] active users from Slack`)
@@ -101,59 +106,35 @@ export class SlackClient {
 	 * @param [botId] The botId for the bot to find.
 	 */
 	async getUser({ email, userId, username }: GetUser): Promise<Member | undefined> {
-		console.log(`Getting Slack UserId for email [${email}], username [${username}], and userId [${userId}]...`)
+		debug(`Getting Slack UserId for email [${email}], username [${username}], and userId [${userId}]...`)
 
 		const users = this.users ?? (await this.getAllusers())
+		const matchParams: MatchParams = { email, userId, userMappings: this.userMappings, username }
+		const matchers = createUserMatchers(matchParams)
 
-		// Define matching functions for better readability and extensibility
-		const matchById = (user: Member) => userId && user.id === userId
-		const matchByEmail = (user: Member) => email && user.profile?.email === email
-		const matchByEmailContainsUsername = (user: Member) =>
-			username && String(user.profile?.email ?? '').includes(username)
-		const matchByDisplayName = (user: Member) => username && user.profile?.display_name === username
-		const matchByRealName = (user: Member) => username && user.profile?.real_name === username
+		// Find the first user that matches any of our criteria
+		const matchedUser = users.find((slackUser) => {
+			// Find a matching criteria for this Slack user, if any
+			const matchedCriteria = matchers.find((criteria) => criteria.check(slackUser))
 
-		const user = users.find((user: Member) => {
-			const idMatch = matchById(user)
-			const emailMatch = matchByEmail(user)
-			const emailContainsUsernameMatch = matchByEmailContainsUsername(user)
-			const displayNameMatch = matchByDisplayName(user)
-			const realNameMatch = matchByRealName(user)
+			// If we found a match, log it
+			if (matchedCriteria) {
+				matchedCriteria.log(slackUser)
 
-			// Log the first match attempt that succeeds for debugging
-			if (idMatch && userId) console.log(`Match found by userId [${userId}] with Slack userId [${user.id}]`)
-			else if (emailMatch && email)
-				console.log(`Match found by email [${email}] with Slack email [${user.profile?.email}]`)
-			else if (emailContainsUsernameMatch && username)
-				console.log(`Match found by username [${username}] contained in Slack email [${user.profile?.email}]`)
-			else if (displayNameMatch && username)
-				console.log(
-					`Match found by username [${username}] matching Slack display_name [${user.profile?.display_name}]`,
-				)
-			else if (realNameMatch && username)
-				console.log(
-					`Match found by username [${username}] matching Slack real_name [${user.profile?.real_name}]`,
-				)
+				return true
+			}
 
-			// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-			return idMatch || emailMatch || emailContainsUsernameMatch || displayNameMatch || realNameMatch
+			return false
 		})
 
-		if (user) {
-			console.log(`User found with userId [${user.id}]`)
+		if (matchedUser) {
+			debug(`User found with userId [${matchedUser.id}]`)
 
-			return user
+			return matchedUser
 		}
 
-		console.log(`No user match found after checking against [${users.length}] users`)
-		if (userId) console.log(`Tried to match userId [${userId}] against Slack user.id fields`)
-		if (email) console.log(`Tried to match email [${email}] against Slack user.profile.email fields`)
-		if (username)
-			console.log(
-				`Tried to match username [${username}] against Slack user.profile.email (contains), display_name and real_name fields`,
-			)
-
-		console.log(`Since no Slack user match found, unable to @mention user or use their profile image`)
+		// No match found, log the failure
+		logFailedMatches(matchParams, users.length)
 	}
 
 	/**
@@ -180,9 +161,9 @@ export class SlackClient {
 					unfurl_media: false,
 					username: 'GitHub Notifier',
 				}
-				console.dir(payload, { depth: null })
+				debug(JSON.stringify(payload, null, 2))
 				const response = await this.client.chat.postMessage(payload)
-				console.dir(response, { depth: null })
+				debug(JSON.stringify(response, null, 2))
 				console.log(
 					`Posted batch [${batchNumber++}] to Slack channel [${channel}] with success [${response.ok}]`,
 				)

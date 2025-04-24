@@ -1,4 +1,5 @@
 import { plural } from '@krauters/utils'
+import { debug } from '@actions/core'
 
 /**
  * Get an emoji based on the age of something.
@@ -7,13 +8,13 @@ import { plural } from '@krauters/utils'
  * @returns {string}
  */
 export function getAgeBasedEmoji(hoursAgo: number): string {
-	console.debug(`Getting an emoji based on age [${hoursAgo}]`)
+	debug(`Getting an emoji based on age [${hoursAgo}]`)
 
 	if (hoursAgo <= 8) {
 		return ''
 	}
 
-	const emojis = ['red-sus', 'rish_sus']
+	const emojis = ['watch']
 	const random = Math.floor(Math.random() * emojis.length)
 
 	return ` :${emojis[random]}:`
@@ -27,7 +28,7 @@ export function getAgeBasedEmoji(hoursAgo: number): string {
  * @returns {string}
  */
 export function getRelativeHumanReadableAge(hoursAgo: number, withAgo = true): string {
-	console.debug('Getting human readable age')
+	debug('Getting human readable age')
 	const suffix = withAgo ? ' ago' : ''
 	if (hoursAgo < 1) {
 		return 'in the last hour'

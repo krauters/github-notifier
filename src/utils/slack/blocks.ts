@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import type { KnownBlock, PlainTextElement, RichTextElement } from '@slack/web-api'
 import type { Button } from '@slack/types'
+import { debug } from '@actions/core'
 
 import { capitalize, formatStringList, plural } from '@krauters/utils'
 
@@ -191,6 +192,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 	const activityBlocks: KnownBlock[] = []
 	for (const review of Object.values(reviews ?? [])) {
 		const { context, email, login: username, relativeHumanReadableAge } = review
+		debug(`Getting Slack user for reviewer [${username}] with email [${email}]`)
 		const slackUser = await slack.getUser({
 			email,
 			username,
@@ -227,6 +229,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 	if (requestedReviewers.length) {
 		const slackUserIdsOrLogins: string[] = []
 		for (const username of requestedReviewers) {
+			debug(`Getting Slack user for requested reviewer [${username}]`)
 			const slackUser = await slack.getUser({ username })
 			slackUserIdsOrLogins.push((withUserMentions && slackUser?.id && `<@${slackUser.id}>`) || username)
 		}

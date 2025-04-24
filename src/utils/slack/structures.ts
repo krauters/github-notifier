@@ -1,6 +1,6 @@
 export enum SlackAppUrl {
 	Prefix = 'https://api.slack.com/apps',
-	SuffixDisplayInfo = 'general#display_info_form',
+	SuffixDisplayInfo = 'general',
 }
 
 export interface GetUser {
@@ -12,4 +12,10 @@ export interface GetUser {
 export interface SlackConfig {
 	channels: string[]
 	token: string
+	userMappings?: UserMapping[]
+}
+
+export interface UserMapping {
+	githubUsername: string
+	slackUsername: string
 }
