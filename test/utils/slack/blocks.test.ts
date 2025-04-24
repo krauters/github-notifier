@@ -217,10 +217,6 @@ describe('Utils: Slack', () => {
 
 				/* eslint-disable @typescript-eslint/naming-convention */
 				await testImageFallback(
-					{ image_512: 'https://example.com/image512.jpg' },
-					'https://example.com/image512.jpg',
-				)
-				await testImageFallback(
 					{ image_192: 'https://example.com/image192.jpg' },
 					'https://example.com/image192.jpg',
 				)

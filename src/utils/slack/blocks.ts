@@ -198,12 +198,11 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 
 		const displayName = slackUser?.profile?.display_name || slackUser?.profile?.real_name_normalized || username
 		const imageUrl =
-			slackUser?.profile?.image_512 ||
-			slackUser?.profile?.image_192 ||
 			slackUser?.profile?.image_72 ||
 			slackUser?.profile?.image_48 ||
 			slackUser?.profile?.image_32 ||
-			slackUser?.profile?.image_24
+			slackUser?.profile?.image_24 ||
+			slackUser?.profile?.image_192
 
 		activityBlocks.push({
 			elements: [
