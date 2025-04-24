@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import type { KnownBlock, PlainTextElement, RichTextElement } from '@slack/web-api'
 import type { Button } from '@slack/types'
 
 import { capitalize, formatStringList, plural } from '@krauters/utils'
 
 import type { Pull } from '../github/structures.js'
-import type { SlackClient } from './slack-client.js'
+import type { SlackClient } from './client.js'
 
 import { prBaseUrl, scmUrl } from '../../constants.js'
 import { getAgeBasedEmoji, haveOrHas } from '../misc.js'
@@ -190,14 +191,19 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 	const activityBlocks: KnownBlock[] = []
 	for (const review of Object.values(reviews ?? [])) {
 		const { context, email, login: username, relativeHumanReadableAge } = review
-		const slackUser = await slack.getSlackUser({
+		const slackUser = await slack.getUser({
 			email,
 			username,
 		})
 
-		// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 		const displayName = slackUser?.profile?.display_name || slackUser?.profile?.real_name_normalized || username
-		const imageUrl = slackUser?.profile?.image_72
+		const imageUrl =
+			slackUser?.profile?.image_512 ||
+			slackUser?.profile?.image_192 ||
+			slackUser?.profile?.image_72 ||
+			slackUser?.profile?.image_48 ||
+			slackUser?.profile?.image_32 ||
+			slackUser?.profile?.image_24
 
 		activityBlocks.push({
 			elements: [
@@ -222,8 +228,7 @@ export async function getPullBlocks(pull: Pull, slack: SlackClient, withUserMent
 	if (requestedReviewers.length) {
 		const slackUserIdsOrLogins: string[] = []
 		for (const username of requestedReviewers) {
-			const slackUser = await slack.getSlackUser({ username })
-			// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+			const slackUser = await slack.getUser({ username })
 			slackUserIdsOrLogins.push((withUserMentions && slackUser?.id && `<@${slackUser.id}>`) || username)
 		}
 		activityBlocks.unshift(

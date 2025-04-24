@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 // @ts-nocheck
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals'
-import { SlackClient } from '../../../src/utils/slack/slack-client.js'
+import { SlackClient } from '../../../src/utils/slack/client.js'
 
 // Mock the WebClient
 const mockWebClient = {
@@ -241,7 +241,7 @@ describe('SlackClient', () => {
 			client.getAllusers = jest.fn().mockResolvedValue([mockUser])
 
 			// Call the method
-			const result = await client.getSlackUser({ email: 'test@example.com' })
+			const result = await client.getUser({ email: 'test@example.com' })
 
 			// Verify the result
 			expect(result).toEqual(mockUser)
@@ -262,7 +262,7 @@ describe('SlackClient', () => {
 			client.getAllusers = jest.fn().mockResolvedValue([mockUser])
 
 			// Call the method
-			const result = await client.getSlackUser({ username: 'testuser' })
+			const result = await client.getUser({ username: 'testuser' })
 
 			// Verify the result
 			expect(result).toEqual(mockUser)
@@ -280,7 +280,7 @@ describe('SlackClient', () => {
 			client.getAllusers = jest.fn().mockResolvedValue([])
 
 			// Call the method
-			const result = await client.getSlackUser({ username: 'nonexistent' })
+			const result = await client.getUser({ username: 'nonexistent' })
 
 			// Verify the result
 			expect(result).toBeUndefined()

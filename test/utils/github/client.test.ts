@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { GitHubClient } from '../../../src/utils/github/github-client.js'
+import { GitHubClient } from '../../../src/utils/github/client.js'
 import { describe, expect, it, jest } from '@jest/globals'
 import { RepositoryType } from '../../../src/utils/github/structures.js'
 

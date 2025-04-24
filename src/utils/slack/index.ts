@@ -1,2 +1,2 @@
 export * from './blocks.js'
-export * from './slack-client.js'
+export * from './client.js'

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import type { Block, BotsInfoResponse } from '@slack/web-api'
 import type { Bot } from '@slack/web-api/dist/types/response/BotsInfoResponse.js'
-import type { Member, Profile } from '@slack/web-api/dist/types/response/UsersListResponse.js'
+import type { Member } from '@slack/web-api/dist/types/response/UsersListResponse.js'
 import type { User } from '@slack/web-api/dist/types/response/UsersLookupByEmailResponse.js'
 
 import { getBatches } from '@krauters/utils'
@@ -100,25 +100,43 @@ export class SlackClient {
 	 * @param username An email address that hopefully as matched to a Slack user account.
 	 * @param [botId] The botId for the bot to find.
 	 */
-	async getSlackUser({ email, userId, username }: GetUser): Promise<Member | undefined> {
+	async getUser({ email, userId, username }: GetUser): Promise<Member | undefined> {
 		console.log(`Getting Slack UserId for email [${email}], username [${username}], and userId [${userId}]...`)
 
 		const users = this.users ?? (await this.getAllusers())
+
+		// Define matching functions for better readability and extensibility
+		const matchById = (user: Member) => userId && user.id === userId
+		const matchByEmail = (user: Member) => email && user.profile?.email === email
+		const matchByEmailContainsUsername = (user: Member) =>
+			username && String(user.profile?.email ?? '').includes(username)
+		const matchByDisplayName = (user: Member) => username && user.profile?.display_name === username
+		const matchByRealName = (user: Member) => username && user.profile?.real_name === username
+
 		const user = users.find((user: Member) => {
-			if (userId) {
-				return user?.id === userId
-			}
+			const idMatch = matchById(user)
+			const emailMatch = matchByEmail(user)
+			const emailContainsUsernameMatch = matchByEmailContainsUsername(user)
+			const displayNameMatch = matchByDisplayName(user)
+			const realNameMatch = matchByRealName(user)
 
-			const profile: Profile | undefined = user.profile
+			// Log the first match attempt that succeeds for debugging
+			if (idMatch && userId) console.log(`Match found by userId [${userId}] with Slack userId [${user.id}]`)
+			else if (emailMatch && email)
+				console.log(`Match found by email [${email}] with Slack email [${user.profile?.email}]`)
+			else if (emailContainsUsernameMatch && username)
+				console.log(`Match found by username [${username}] contained in Slack email [${user.profile?.email}]`)
+			else if (displayNameMatch && username)
+				console.log(
+					`Match found by username [${username}] matching Slack display_name [${user.profile?.display_name}]`,
+				)
+			else if (realNameMatch && username)
+				console.log(
+					`Match found by username [${username}] matching Slack real_name [${user.profile?.real_name}]`,
+				)
 
-			return (
-				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-				(email && profile?.email === email) ||
-				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-				String(profile?.email).includes(username!) ||
-				profile?.display_name === username ||
-				profile?.real_name === username
-			)
+			// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+			return idMatch || emailMatch || emailContainsUsernameMatch || displayNameMatch || realNameMatch
 		})
 
 		if (user) {
@@ -127,7 +145,15 @@ export class SlackClient {
 			return user
 		}
 
-		console.log('User not found, returning undefined')
+		console.log(`No user match found after checking against [${users.length}] users`)
+		if (userId) console.log(`Tried to match userId [${userId}] against Slack user.id fields`)
+		if (email) console.log(`Tried to match email [${email}] against Slack user.profile.email fields`)
+		if (username)
+			console.log(
+				`Tried to match username [${username}] against Slack user.profile.email (contains), display_name and real_name fields`,
+			)
+
+		console.log(`Since no Slack user match found, unable to @mention user or use their profile image`)
 	}
 
 	/**

@@ -21,14 +21,14 @@ jest.mock('../src/utils/slack/blocks.js', () => ({
 }))
 
 const mockSlackPostMessage = jest.fn()
-jest.mock('../src/utils/slack/slack-client.js', () => ({
+jest.mock('../src/utils/slack/client.js', () => ({
 	SlackClient: jest.fn(() => ({
 		enforceAppNamePattern: jest.fn(),
 		postMessage: mockSlackPostMessage,
 	})),
 }))
 
-jest.mock('../src/utils/github/github-client.js', () => {
+jest.mock('../src/utils/github/client.js', () => {
 	const mockGetOrg = jest.fn()
 	mockGetOrg.mockImplementation(() => Promise.resolve({ name: 'test-org' }))
 
