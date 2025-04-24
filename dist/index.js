@@ -81589,12 +81589,11 @@ async function getPullBlocks(pull, slack, withUserMentions) {
             username,
         });
         const displayName = slackUser?.profile?.display_name || slackUser?.profile?.real_name_normalized || username;
-        const imageUrl = slackUser?.profile?.image_512 ||
-            slackUser?.profile?.image_192 ||
-            slackUser?.profile?.image_72 ||
+        const imageUrl = slackUser?.profile?.image_72 ||
             slackUser?.profile?.image_48 ||
             slackUser?.profile?.image_32 ||
-            slackUser?.profile?.image_24;
+            slackUser?.profile?.image_24 ||
+            slackUser?.profile?.image_192;
         activityBlocks.push({
             elements: [
                 {
@@ -90388,7 +90387,7 @@ module.exports = {"version":"3.17.0"};
 /***/ 8330:
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.2.0","TB":"https://buymeacoffee.com/coltenkrauter"}');
+module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.2.1","TB":"https://buymeacoffee.com/coltenkrauter"}');
 
 /***/ })
 
