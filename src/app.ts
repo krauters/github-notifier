@@ -8,11 +8,11 @@ import { formatStringList, plural } from '@krauters/utils'
 
 import pkg from '../package.json' with { type: 'json' }
 import { workflowLogsUrl, workflowUrl } from './constants.js'
-import { GitHubClient } from './utils/github/github-client.js'
+import { GitHubClient } from './utils/github/client.js'
 import type { Pull } from './utils/github/structures.js'
 import { PullState, RepositoryType } from './utils/github/structures.js'
 import { getFirstBlocks, getLastBlocks, getPullBlocks } from './utils/slack/blocks.js'
-import { SlackClient } from './utils/slack/slack-client.js'
+import { SlackClient } from './utils/slack/client.js'
 import { getApprovedPullRequest } from './utils/test-data.js'
 import { parseInputs as getInputs } from './input-parser.js'
 

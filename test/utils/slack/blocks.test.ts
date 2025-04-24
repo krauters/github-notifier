@@ -3,11 +3,13 @@ import {
 	getEmojiBlocks,
 	getFirstBlocks,
 	getLastBlocks,
+	getPullBlocks,
 } from '../../../src/utils/slack/blocks.js'
 
 // Jest globals
-import { describe, expect, it } from '@jest/globals'
+import { describe, expect, it, jest } from '@jest/globals'
 
+/* eslint-disable max-lines-per-function */
 describe('getFirstBlocks (empty orgs)', () => {
 	it('should only return header (and optional sub-header) blocks when no orgs are provided', () => {
 		const header = 'No Open PRs'
@@ -160,5 +162,86 @@ describe('Utils: Slack', () => {
 				})
 			})
 		})
+
+		describe('getPullBlocks', () => {
+			it('should use fallback logic for Slack user profile images', async () => {
+				// @ts-expect-error Missing properties in Pull type
+				const pull = {
+					age: '2 days ago',
+					ageInHours: 48,
+					commits: 3,
+					draft: false,
+					filesAndChanges: { changes: 20, files: 5 },
+					number: 123,
+					repo: 'test-repo',
+					repoUrl: 'https://github.com/org/test-repo',
+					requestedReviewers: ['testuser'],
+					reviewReport: {
+						approvals: 0,
+						approvalsRemaining: 1,
+						requiredReviewers: 1,
+						reviews: {
+							reviewer1: {
+								context: 'commented',
+								email: 'reviewer1@example.com',
+								login: 'reviewer1',
+								relativeHumanReadableAge: '1 hour ago',
+							},
+						},
+					},
+					title: 'Test PR',
+					url: 'https://github.com/org/test-repo/pull/123',
+				}
+
+				const testImageFallback = async (profileData, expectedImageUrl) => {
+					const mockSlackClient = {
+						getUser: jest.fn().mockImplementation(() => {
+							return {
+								id: 'U123456',
+								profile: profileData,
+							}
+						}),
+					}
+
+					const blocks = await getPullBlocks(pull, mockSlackClient, false)
+
+					const imageBlock = blocks.find(
+						(block) =>
+							block.type === 'context' && block.elements?.some((element) => element.type === 'image'),
+					)
+
+					// @ts-expect-error KnownBlock type doesn't properly recognize context elements
+					const imageElement = imageBlock.elements.find((element) => element.type === 'image')
+					expect(imageElement.image_url).toBe(expectedImageUrl)
+				}
+
+				/* eslint-disable @typescript-eslint/naming-convention */
+				await testImageFallback(
+					{ image_512: 'https://example.com/image512.jpg' },
+					'https://example.com/image512.jpg',
+				)
+				await testImageFallback(
+					{ image_192: 'https://example.com/image192.jpg' },
+					'https://example.com/image192.jpg',
+				)
+				await testImageFallback(
+					{ image_72: 'https://example.com/image72.jpg' },
+					'https://example.com/image72.jpg',
+				)
+				await testImageFallback(
+					{ image_48: 'https://example.com/image48.jpg' },
+					'https://example.com/image48.jpg',
+				)
+				await testImageFallback(
+					{ image_32: 'https://example.com/image32.jpg' },
+					'https://example.com/image32.jpg',
+				)
+				await testImageFallback(
+					{ image_24: 'https://example.com/image24.jpg' },
+					'https://example.com/image24.jpg',
+				)
+			})
+		})
 	})
 })
+/* eslint-enable max-lines-per-function */

@@ -80746,10 +80746,10 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony import */ var _krauters_utils__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(_krauters_utils__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _package_json__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8330);
 /* harmony import */ var _constants_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(27242);
-/* harmony import */ var _utils_github_github_client_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(32031);
+/* harmony import */ var _utils_github_client_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(10598);
 /* harmony import */ var _utils_github_structures_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(28315);
 /* harmony import */ var _utils_slack_blocks_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(96114);
-/* harmony import */ var _utils_slack_slack_client_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(70741);
+/* harmony import */ var _utils_slack_client_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(90294);
 /* harmony import */ var _utils_test_data_js__WEBPACK_IMPORTED_MODULE_9__ = __nccwpck_require__(23930);
 /* harmony import */ var _input_parser_js__WEBPACK_IMPORTED_MODULE_10__ = __nccwpck_require__(40935);
 // https://github.com/actions/github-script
@@ -80772,12 +80772,12 @@ async function main() {
     try {
         (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)('Starting main...');
         const { githubConfig, repositoryFilter, slackConfig, withArchived, withDrafts, withPublic, withTestData, withUserMentions, } = (0,_input_parser_js__WEBPACK_IMPORTED_MODULE_10__/* .parseInputs */ .T)();
-        const slack = new _utils_slack_slack_client_js__WEBPACK_IMPORTED_MODULE_8__/* .SlackClient */ .Q(slackConfig);
+        const slack = new _utils_slack_client_js__WEBPACK_IMPORTED_MODULE_8__/* .SlackClient */ .Q(slackConfig);
         const results = await githubConfig.tokens.reduce(async (accPromise, token) => {
             const acc = await accPromise;
             try {
                 // TODO - Consider making this thread safe so requests can be made in parallel
-                const client = new _utils_github_github_client_js__WEBPACK_IMPORTED_MODULE_5__/* .GitHubClient */ .j({
+                const client = new _utils_github_client_js__WEBPACK_IMPORTED_MODULE_5__/* .GitHubClient */ .j({
                     options: githubConfig.options,
                     token,
                 });
@@ -80933,7 +80933,7 @@ function parseInputs() {
 
 /***/ }),
 
-/***/ 32031:
+/***/ 10598:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
@@ -81376,7 +81376,7 @@ var PullState;
 /**
  * Get an emoji based on the age of something.
  *
- * @param {number} hoursAgo - The number of hours ago since something happened.
+ * @param {number} hoursAgo The number of hours ago since something happened.
  * @returns {string}
  */
 function getAgeBasedEmoji(hoursAgo) {
@@ -81391,8 +81391,8 @@ function getAgeBasedEmoji(hoursAgo) {
 /**
  * Get the relative human readable age of something.
  *
- * @param {number} hoursAgo - The number of hours ago since something happened.
- * @param {boolean} [withAgo=true] - Whether to include the ' ago' suffix when appropriate.
+ * @param {number} hoursAgo The number of hours ago since something happened.
+ * @param {boolean} [withAgo=true] Whether to include the ' ago' suffix when appropriate.
  * @returns {string}
  */
 function getRelativeHumanReadableAge(hoursAgo, withAgo = true) {
@@ -81409,7 +81409,7 @@ function getRelativeHumanReadableAge(hoursAgo, withAgo = true) {
 }
 /**
  * Get have or has depending on quantity context.
- * @param {number} number - The number of entities in question.
+ * @param {number} number The number of entities in question.
  * @returns {string}
  */
 function haveOrHas(number) {
@@ -81584,13 +81584,17 @@ async function getPullBlocks(pull, slack, withUserMentions) {
     const activityBlocks = [];
     for (const review of Object.values(reviews ?? [])) {
         const { context, email, login: username, relativeHumanReadableAge } = review;
-        const slackUser = await slack.getSlackUser({
+        const slackUser = await slack.getUser({
             email,
             username,
         });
-        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         const displayName = slackUser?.profile?.display_name || slackUser?.profile?.real_name_normalized || username;
-        const imageUrl = slackUser?.profile?.image_72;
+        const imageUrl = slackUser?.profile?.image_512 ||
+            slackUser?.profile?.image_192 ||
+            slackUser?.profile?.image_72 ||
+            slackUser?.profile?.image_48 ||
+            slackUser?.profile?.image_32 ||
+            slackUser?.profile?.image_24;
         activityBlocks.push({
             elements: [
                 {
@@ -81613,8 +81617,7 @@ async function getPullBlocks(pull, slack, withUserMentions) {
     if (requestedReviewers.length) {
         const slackUserIdsOrLogins = [];
         for (const username of requestedReviewers) {
-            const slackUser = await slack.getSlackUser({ username });
-            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+            const slackUser = await slack.getUser({ username });
             slackUserIdsOrLogins.push((withUserMentions && slackUser?.id && `<@${slackUser.id}>`) || username);
         }
         activityBlocks.unshift(...getContextMarkdownBlock((0,_krauters_utils__WEBPACK_IMPORTED_MODULE_0__.formatStringList)(slackUserIdsOrLogins) +
@@ -81660,7 +81663,7 @@ async function getPullBlocks(pull, slack, withUserMentions) {
 
 /***/ }),
 
-/***/ 70741:
+/***/ 90294:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -81680,7 +81683,7 @@ var SlackAppUrl;
     SlackAppUrl["SuffixDisplayInfo"] = "general#display_info_form";
 })(SlackAppUrl || (SlackAppUrl = {}));
 
-;// CONCATENATED MODULE: ./src/utils/slack/slack-client.ts
+;// CONCATENATED MODULE: ./src/utils/slack/client.ts
 
 
 
@@ -81759,27 +81762,47 @@ class SlackClient {
      * @param username An email address that hopefully as matched to a Slack user account.
      * @param [botId] The botId for the bot to find.
      */
-    async getSlackUser({ email, userId, username }) {
+    async getUser({ email, userId, username }) {
         console.log(`Getting Slack UserId for email [${email}], username [${username}], and userId [${userId}]...`);
         const users = this.users ?? (await this.getAllusers());
+        // Define matching functions for better readability and extensibility
+        const matchById = (user) => userId && user.id === userId;
+        const matchByEmail = (user) => email && user.profile?.email === email;
+        const matchByEmailContainsUsername = (user) => username && String(user.profile?.email ?? '').includes(username);
+        const matchByDisplayName = (user) => username && user.profile?.display_name === username;
+        const matchByRealName = (user) => username && user.profile?.real_name === username;
         const user = users.find((user) => {
-            if (userId) {
-                return user?.id === userId;
-            }
-            const profile = user.profile;
-            return (
+            const idMatch = matchById(user);
+            const emailMatch = matchByEmail(user);
+            const emailContainsUsernameMatch = matchByEmailContainsUsername(user);
+            const displayNameMatch = matchByDisplayName(user);
+            const realNameMatch = matchByRealName(user);
+            // Log the first match attempt that succeeds for debugging
+            if (idMatch && userId)
+                console.log(`Match found by userId [${userId}] with Slack userId [${user.id}]`);
+            else if (emailMatch && email)
+                console.log(`Match found by email [${email}] with Slack email [${user.profile?.email}]`);
+            else if (emailContainsUsernameMatch && username)
+                console.log(`Match found by username [${username}] contained in Slack email [${user.profile?.email}]`);
+            else if (displayNameMatch && username)
+                console.log(`Match found by username [${username}] matching Slack display_name [${user.profile?.display_name}]`);
+            else if (realNameMatch && username)
+                console.log(`Match found by username [${username}] matching Slack real_name [${user.profile?.real_name}]`);
             // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-            (email && profile?.email === email) ||
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                String(profile?.email).includes(username) ||
-                profile?.display_name === username ||
-                profile?.real_name === username);
+            return idMatch || emailMatch || emailContainsUsernameMatch || displayNameMatch || realNameMatch;
         });
         if (user) {
             console.log(`User found with userId [${user.id}]`);
             return user;
         }
-        console.log('User not found, returning undefined');
+        console.log(`No user match found after checking against [${users.length}] users`);
+        if (userId)
+            console.log(`Tried to match userId [${userId}] against Slack user.id fields`);
+        if (email)
+            console.log(`Tried to match email [${email}] against Slack user.profile.email fields`);
+        if (username)
+            console.log(`Tried to match username [${username}] against Slack user.profile.email (contains), display_name and real_name fields`);
+        console.log(`Since no Slack user match found, unable to @mention user or use their profile image`);
     }
     /**
      * Post a message with blocks to Slack channels.
@@ -90365,7 +90388,7 @@ module.exports = {"version":"3.17.0"};
 /***/ 8330:
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.1.0","TB":"https://buymeacoffee.com/coltenkrauter"}');
+module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.2.0","TB":"https://buymeacoffee.com/coltenkrauter"}');
 
 /***/ })
 
