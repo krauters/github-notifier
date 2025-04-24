@@ -35,3 +35,19 @@ jobs:
           with-test-data: true
       - name: Print Output
         run: echo "${{ steps.test-action.outputs.response }}"
+  test-action-2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test Action
+        uses: ./
+        with:
+          github-tokens: test, ${{ secrets.GH_TOKEN_GH_NOTIFIER }}
+          channels: C07L8EWB389
+          user-mappings: reviewer1:coltenkrauter
+          slack-token: ${{ secrets.SLACK_TOKEN_GH_NOTIFIER }}
+          with-test-data: true
+      - name: Print Output
+        run: echo "${{ steps.test-action.outputs.response }}"
+      

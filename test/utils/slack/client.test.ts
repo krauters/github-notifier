@@ -194,7 +194,9 @@ describe('SlackClient', () => {
 
 			// Verify the result
 			expect(result).toEqual(mockBotInfo)
-			expect(client.client.bots.info).toHaveBeenCalledWith({ bot: 'test-bot-id' })
+			expect(client.client.bots.info).toHaveBeenCalledWith({
+				bot: 'test-bot-id',
+			})
 		})
 
 		it('should throw error if bot info request fails', async () => {
@@ -229,7 +231,11 @@ describe('SlackClient', () => {
 	describe('getSlackUser', () => {
 		it('should find user by email', async () => {
 			// Create mock user data
-			const mockUser = { id: 'U1', name: 'test-user', profile: { email: 'test@example.com' } }
+			const mockUser = {
+				id: 'U1',
+				name: 'test-user',
+				profile: { email: 'test@example.com' },
+			}
 
 			// Create client
 			const client = new SlackClient({
@@ -250,7 +256,11 @@ describe('SlackClient', () => {
 
 		it('should find user by username', async () => {
 			// Create mock user data
-			const mockUser = { id: 'U1', name: 'test-user', profile: { display_name: 'testuser' } }
+			const mockUser = {
+				id: 'U1',
+				name: 'test-user',
+				profile: { display_name: 'testuser' },
+			}
 
 			// Create client
 			const client = new SlackClient({
@@ -266,6 +276,234 @@ describe('SlackClient', () => {
 
 			// Verify the result
 			expect(result).toEqual(mockUser)
+			expect(client.getAllusers).toHaveBeenCalled()
+		})
+
+		it('should find user through custom user mapping by name', async () => {
+			// Create mock user data - note that the Slack username is different from GitHub
+			const mockUser = {
+				id: 'U2',
+				name: 'slack-user',
+				profile: { display_name: 'slackuser' },
+			}
+
+			// Create client with custom user mappings
+			const client = new SlackClient({
+				channels: ['test-channel'],
+				token: 'test-token',
+				userMappings: [{ githubUsername: 'github-user', slackUsername: 'slack-user' }],
+			})
+
+			// Mock getAllusers
+			client.getAllusers = jest.fn().mockResolvedValue([mockUser])
+
+			// Call the method with GitHub username
+			const result = await client.getUser({ username: 'github-user' })
+
+			// Verify the result
+			expect(result).toEqual(mockUser)
+			expect(client.getAllusers).toHaveBeenCalled()
+		})
+
+		it('should find user through custom user mapping by display_name', async () => {
+			// Create mock user data with display_name matching the mapped Slack username
+			const mockUser = {
+				id: 'U3',
+				name: 'other-name',
+				profile: { display_name: 'slack-display' },
+			}
+
+			// Create client with custom user mappings
+			const client = new SlackClient({
+				channels: ['test-channel'],
+				token: 'test-token',
+				userMappings: [{ githubUsername: 'github-dev', slackUsername: 'slack-display' }],
+			})
+
+			// Mock getAllusers
+			client.getAllusers = jest.fn().mockResolvedValue([mockUser])
+
+			// Call the method with GitHub username
+			const result = await client.getUser({ username: 'github-dev' })
+
+			// Verify the result
+			expect(result).toEqual(mockUser)
+			expect(client.getAllusers).toHaveBeenCalled()
+		})
+
+		it('should find user through custom user mapping by real_name', async () => {
+			// Create mock user data with real_name matching the mapped Slack username
+			const mockUser = {
+				id: 'U4',
+				name: 'random',
+				profile: { real_name: 'real-slack-name' },
+			}
+
+			// Create client with custom user mappings
+			const client = new SlackClient({
+				channels: ['test-channel'],
+				token: 'test-token',
+				userMappings: [{ githubUsername: 'github-real', slackUsername: 'real-slack-name' }],
+			})
+
+			// Mock getAllusers
+			client.getAllusers = jest.fn().mockResolvedValue([mockUser])
+
+			// Call the method with GitHub username
+			const result = await client.getUser({ username: 'github-real' })
+
+			// Verify the result
+			expect(result).toEqual(mockUser)
+			expect(client.getAllusers).toHaveBeenCalled()
+		})
+
+		it('should use standard matching when user mapping fails', async () => {
+			// Create mock users
+			const mockUsers = [
+				{
+					id: 'U5',
+					name: 'irrelevant',
+					profile: { display_name: 'not-matching' },
+				},
+				{
+					id: 'U6',
+					name: 'fallback',
+					profile: { email: 'github-fallback@example.com' },
+				},
+			]
+
+			// Create client with custom user mappings that won't match
+			const client = new SlackClient({
+				channels: ['test-channel'],
+				token: 'test-token',
+				userMappings: [{ githubUsername: 'some-other-user', slackUsername: 'not-relevant' }],
+			})
+
+			// Mock getAllusers
+			client.getAllusers = jest.fn().mockResolvedValue(mockUsers)
+
+			// Call the method with GitHub username that will be found in email
+			const result = await client.getUser({
+				email: 'github-fallback@example.com',
+				username: 'github-fallback',
+			})
+
+			// Verify the result falls back to standard matching
+			expect(result).toEqual(mockUsers[1])
+			expect(client.getAllusers).toHaveBeenCalled()
+		})
+
+		it('should try multiple user mappings and use the first match it finds', async () => {
+			// Create mock users
+			const mockUsers = [
+				{
+					id: 'U7',
+					name: 'second-match',
+					profile: { display_name: 'second-match' },
+				},
+				{
+					id: 'U8',
+					name: 'first-match',
+					profile: { display_name: 'first-match' },
+				},
+			]
+
+			// Create client with multiple custom user mappings
+			const client = new SlackClient({
+				channels: ['test-channel'],
+				token: 'test-token',
+				userMappings: [
+					{ githubUsername: 'multi-mapped', slackUsername: 'first-match' },
+					{ githubUsername: 'multi-mapped', slackUsername: 'second-match' },
+					{ githubUsername: 'multi-mapped', slackUsername: 'no-match' },
+				],
+			})
+
+			// Mock getAllusers - note the order is important for this test
+			client.getAllusers = jest.fn().mockResolvedValue(mockUsers)
+
+			// Call the method with GitHub username that has multiple mappings
+			const result = await client.getUser({ username: 'multi-mapped' })
+
+			// When searching the Slack users, the first matching user found is returned
+			// In this case, it's mockUsers[0] with id U7
+			expect(result).toEqual(mockUsers[0])
+			expect(client.getAllusers).toHaveBeenCalled()
+		})
+
+		it('should prioritize user mappings over standard matching', async () => {
+			// Create mock users where one has both a mapping match and a standard match
+			const mockUsers = [
+				{
+					id: 'U9',
+					name: 'mapped-name',
+					profile: {
+						display_name: 'other-display',
+						email: 'test-github@example.com',
+					},
+				},
+				{
+					id: 'U10',
+					name: 'test-github',
+					profile: {
+						display_name: 'test-github',
+						email: 'different@example.com',
+					},
+				},
+			]
+
+			// Create client with user mapping
+			const client = new SlackClient({
+				channels: ['test-channel'],
+				token: 'test-token',
+				userMappings: [{ githubUsername: 'test-github', slackUsername: 'mapped-name' }],
+			})
+
+			// Mock getAllusers
+			client.getAllusers = jest.fn().mockResolvedValue(mockUsers)
+
+			// Call the method with GitHub username that could match both by mapping and by name
+			const result = await client.getUser({ username: 'test-github' })
+
+			// The mapping match should be prioritized
+			// The first user with the mapped name
+			expect(result).toEqual(mockUsers[0])
+			expect(client.getAllusers).toHaveBeenCalled()
+		})
+
+		it('should fall back to standard matching when mapping users are not found', async () => {
+			// Create mock users where there's no match by mapping but there is a standard match
+			const mockUsers = [
+				{
+					id: 'U11',
+					name: 'fallback-user',
+					profile: {
+						display_name: 'github-fallback',
+						email: 'fallback@example.com',
+					},
+				},
+			]
+
+			// Create client with user mapping to a non-existent Slack user
+			const client = new SlackClient({
+				channels: ['test-channel'],
+				token: 'test-token',
+				userMappings: [
+					{
+						githubUsername: 'github-fallback',
+						slackUsername: 'does-not-exist',
+					},
+				],
+			})
+
+			// Mock getAllusers
+			client.getAllusers = jest.fn().mockResolvedValue(mockUsers)
+
+			// Call the method with GitHub username
+			const result = await client.getUser({ username: 'github-fallback' })
+
+			// Should fall back to standard matching and find by display_name
+			expect(result).toEqual(mockUsers[0])
 			expect(client.getAllusers).toHaveBeenCalled()
 		})
 

@@ -1,7 +1,7 @@
 {
   "name": "@krauters/github-notifier",
   "description": "GitHub Notifier by Krauters – Post Open Pull Requests to Slack",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "author": "Colten Krauter <coltenkrauter>",
   "type": "module",
   "homepage": "https://buymeacoffee.com/coltenkrauter",

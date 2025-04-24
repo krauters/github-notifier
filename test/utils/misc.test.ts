@@ -10,7 +10,7 @@ describe('Utils: Misc', () => {
 
 		it('should return a random emoji for hours > 8', () => {
 			const result = getAgeBasedEmoji(9)
-			expect(result).toMatch(/ :(red-sus|rish_sus):/)
+			expect(result).toMatch(/ :(watch):/)
 		})
 	})
 

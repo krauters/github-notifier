@@ -26,6 +26,7 @@ import {
 	type Reviews,
 	reviewText,
 } from './structures.js'
+import { debug } from '@actions/core'
 import { average, getHoursAgo, minutesBetweenDates, snapDate, SnapType } from '@krauters/utils'
 import { ignoreFilenamesForChanges } from '../../constants.js'
 import { getRelativeHumanReadableAge } from '../misc.js'
@@ -63,9 +64,9 @@ export class GitHubClient {
 	 * @param username A GitHub username.
 	 */
 	async getEmail(username: string): Promise<string | undefined> {
-		console.log(`Getting email from GitHub for username [${username}]...`)
+		debug(`Getting email from GitHub for username [${username}]...`)
 		const user = await this.getUser(username)
-		console.log(`User email for [${username}] is [${user?.email}]`)
+		debug(`User email for [${username}] is [${user?.email}]`)
 
 		return user?.email ?? undefined
 	}
@@ -214,7 +215,7 @@ export class GitHubClient {
 
 		const pullRequests = []
 		for (const repo of repositories) {
-			console.debug(`Getting [${state}] pulls in repository [${repo.name}]...`)
+			debug(`Getting [${state}] pulls in repository [${repo.name}]...`)
 			const pulls = await this.client.paginate(
 				this.client.rest.pulls.list,
 				{
@@ -223,12 +224,12 @@ export class GitHubClient {
 					state,
 				},
 				(response, done) => {
-					console.debug(
+					debug(
 						`Paginated response for repository [${repo.name}], status [${response.status}], items [${response.data.length}]`,
 					)
 					const found = response.data.find((pull) => new Date(pull.created_at) < oldest)
 					if (found && state !== PullState.Open) {
-						console.debug(`Done due to #${found.number} / ${found.html_url}`)
+						debug(`Done due to #${found.number} / ${found.html_url}`)
 						done()
 					}
 
@@ -239,9 +240,9 @@ export class GitHubClient {
 			console.log(`Found [${pulls.length}] pull in repository [${repo.name}]`)
 			for (const pull of pulls) {
 				const { base, closed_at, created_at, draft, html_url, merged_at, number, title, user } = pull
-				console.log(`Processing pull [${number}]...`)
+				debug(`Processing pull [${number}]...`)
 				if (!withDrafts && draft) {
-					console.log(`withDrafts is [${withDrafts}]`)
+					debug(`withDrafts is [${withDrafts}]`)
 					continue
 				}
 
@@ -281,7 +282,7 @@ export class GitHubClient {
 					url: html_url,
 					user: withUser ? await this.getUser(String(user?.login)) : undefined,
 				})
-				console.log(`Added pull [${number}] to response`)
+				debug(`Added pull [${number}] to response`)
 			}
 		}
 
@@ -317,7 +318,13 @@ export class GitHubClient {
 			filteredRepos = filteredRepos.filter((repo: GitHubRepository) => repo.visibility !== RepositoryType.Public)
 		}
 		console.log(`Found [${filteredRepos.length}] repositories`)
-		console.log(filteredRepos.map((repo) => repo.name))
+		debug(
+			JSON.stringify(
+				filteredRepos.map((repo) => repo.name),
+				null,
+				2,
+			),
+		)
 
 		return filteredRepos
 	}
@@ -346,7 +353,7 @@ export class GitHubClient {
 	 */
 	async getRequiredReviewers(repo: string, branchName: string): Promise<number> {
 		const org = await this.getOrgName()
-		console.log(`Getting branch rules for repository [${repo}] branch [${branchName}]...`)
+		debug(`Getting branch rules for repository [${repo}] branch [${branchName}]...`)
 		try {
 			const rules: GitHubBranchRules = await this.client.paginate(this.client.rest.repos.getBranchRules, {
 				branch: branchName,
@@ -360,7 +367,7 @@ export class GitHubClient {
 			})
 			let branchRequiredReviewers = 0
 			if (branch.data.protection.enabled) {
-				console.log(`
+				debug(`
 					The "rest.repos.getBranchRules" endpoint doesn't reliably return 
 					repository-level branch protections, so we are also checking the
 					"branch.data.protection_url" endpoint.
@@ -378,7 +385,7 @@ export class GitHubClient {
 						'required_approving_review_count' in rule.parameters,
 				)
 				.map((rule) => Number(rule.parameters.required_approving_review_count))
-			console.log(`Required reviewers for repository [${repo}] branch [${branchName}] is [${requiredReviewers}]`)
+			debug(`Required reviewers for repository [${repo}] branch [${branchName}] is [${requiredReviewers}]`)
 
 			return Math.max(...requiredReviewers, branchRequiredReviewers)
 		} catch (error: unknown) {
@@ -421,13 +428,11 @@ export class GitHubClient {
 		for (const ghReview of ghReviews ?? []) {
 			const login = ghReview?.user?.login
 			if (!login || !allowedStates.includes(ghReview.state as GitHubReviewState)) {
-				console.debug(
-					`Ignoring review because state [${ghReview.state}] is not one of [${allowedStates.join(', ')}]`,
-				)
+				debug(`Ignoring review because state [${ghReview.state}] is not one of [${allowedStates.join(', ')}]`)
 				continue
 			}
 			if (requestedReviewers.includes(login)) {
-				console.debug(
+				debug(
 					`Ignoring review with state [${ghReview.state}] because user with login [${login}] was requested as a reviewer so previous reviews are no longer valid`,
 				)
 				continue
@@ -435,7 +440,7 @@ export class GitHubClient {
 			const email = await this.getEmail(login)
 			const submittedAt = new Date(String(ghReview.submitted_at))
 			if (login in reviews && reviews[login].submittedAt.valueOf() > submittedAt.valueOf()) {
-				console.debug('Ignoring old review')
+				debug('Ignoring old review')
 				continue
 			}
 			reviews[login] = {
@@ -446,7 +451,7 @@ export class GitHubClient {
 				state: ghReview.state,
 				submittedAt,
 			}
-			console.log(`Adding/overwriting reviewer [${login}] with state [${ghReview.state}] for pull [${number}]`)
+			debug(`Adding/overwriting reviewer [${login}] with state [${ghReview.state}] for pull [${number}]`)
 		}
 		const approvals = Object.values(reviews).filter(
 			(review) => (review.state as GitHubReviewState) === GitHubReviewState.Approved,
@@ -473,15 +478,15 @@ export class GitHubClient {
 	 * @param username A GitHub username.
 	 */
 	async getUser(username: string): Promise<GitHubUser> {
-		console.log(`Getting user from GitHub for username [${username}]...`)
+		debug(`Getting user from GitHub for username [${username}]...`)
 		if (username in this.cacheUser) {
-			console.log('Found cache hit!')
+			debug('Found cache hit!')
 
 			return this.cacheUser[username]
 		}
-		console.log('No hit in cache, making request...')
+		debug('No hit in cache, making request...')
 		const { data: user } = await this.client.rest.users.getByUsername({ username })
-		console.log('Storing result in cache...')
+		debug('Storing result in cache...')
 		this.cacheUser[username] = user
 
 		return user

@@ -43,7 +43,7 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
 
 1. (Optional) Start by creating a repository called `github-notifier`.
     1. Whatever repo you use to host this workflow needs to be able to use GitHub Runners.
-1. [Generate a GitHub token](https://github.com/settings/tokens?type=beta) – You’ll need a fine-grained GitHub token with resource owner being an organization that allows access to either all your repositories or just the ones you want notifications about.
+1. [Generate a GitHub token](https://github.com/settings/tokens?type=beta) – You'll need a fine-grained GitHub token with resource owner being an organization that allows access to either all your repositories or just the ones you want notifications about.
 
     Here are the specific permissions the token needs:
 
@@ -93,6 +93,7 @@ This _GitHub Action_ will query the GitHub (or GitHub Enterprise) org for all re
             github-tokens: ${{ secrets.GH_TOKEN_GH_NOTIFIER }}, ${{ secrets.GH_TOKEN_GH_NOTIFIER_FOR_ANOTHER_ORG }}
             channels: C07L8EWB389
             slack-token: ${{ secrets.SLACK_TOKEN_GH_NOTIFIER }}
+            user-mappings: github-user1:slack-user1, github-user2:slack-user2
     ```
     
     For more details about available inputs, you can check out the [action definition file, action.yaml](./action.yaml).
@@ -106,12 +107,28 @@ See [action.yaml](./action.yaml) for more detailed information.
 | `github-tokens`       | Comma Comma-separated list of fine grained Github tokens (one per GitHub organization) with scopes for administration, PR details, and members.| Yes      |          |
 | `slack-token`         | Permissions to post to Slack and perform user lookups.                                       | Yes      |          |
 | `channels`            | Comma-separated list of Slack channel IDs to post to.                                        | Yes      |          |
+| `user-mappings`       | Comma-separated list of GitHub to Slack username mappings in the format "github:slack". Example: "octocat:slackcat,user1:slack1" | No       |          |
 | `with-archived`       | Include PRs from archived repositories.                                                      | No       | `false`  |
 | `with-public`         | Include PRs from public repositories.                                                        | No       | `true`   |
 | `with-drafts`         | Include draft PRs.                                                                           | No       | `false`  |                   | No       | `false`  |
 | `with-user-mentions`  | Allow Slack user mentions.                                                                   | No       | `true`   |
 | `repository-filter`   | Comma-separated list of repositories to scan.                                                | No       |          |
 | `base-url`            | Base GitHub API URL (e.g., https://api.github.com).                                          | No       |          |
+
+## User Matching
+
+GitHub Notifier attempts to match GitHub users with their corresponding Slack accounts to properly tag users and display avatars in notifications. The matching process works in the following order:
+
+1. **Custom user mappings** - Define explicit GitHub to Slack username mappings using the `user-mappings` parameter (e.g., `github-user:slack-user`). This takes highest priority.
+
+2. **Fallback matching methods** - If no mapping is found or if the mapped Slack username doesn't exist, the system automatically tries to match users by:
+   - User ID (if provided)
+   - Email address
+   - Username contained in email
+   - Display name
+   - Real name
+
+This flexible matching system helps ensure that users are properly identified across both platforms, even when usernames don't match exactly.
 
 ## Troubleshooting
 
@@ -120,7 +137,7 @@ Error: An API error occurred: channel_not_found
 ```
 
 
-This error means the Slack app probably wasn’t added to the channel you’re trying to post in.
+This error means the Slack app probably wasn't added to the channel you're trying to post in.
 
 ## Husky
 
@@ -134,7 +151,7 @@ This project uses a custom pre-commit hook to run `npm run bundle`. This ensures
 
 ## Contributing
 
-The goal of this project is to continually evolve and improve its core features, making it more efficient and easier to use. Development happens openly here on GitHub, and we’re thankful to the community for contributing bug fixes, enhancements, and fresh ideas. Whether you're fixing a small bug or suggesting a major improvement, your input is invaluable.
+The goal of this project is to continually evolve and improve its core features, making it more efficient and easier to use. Development happens openly here on GitHub, and we're thankful to the community for contributing bug fixes, enhancements, and fresh ideas. Whether you're fixing a small bug or suggesting a major improvement, your input is invaluable.
 
 ## License
 

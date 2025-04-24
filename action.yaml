@@ -28,6 +28,16 @@ inputs:
   channels:
     required: true
     description: Comma-separated list of Slack channel IDs to post to.
+  user-mappings:
+    required: false
+    description: |
+      Comma-separated list of GitHub to Slack username mappings in the format "github:slack".
+      These mappings are PRIORITIZED over automatic matching between GitHub and Slack users.
+      If a mapping is defined but the Slack username doesn't exist, it will fall back to automatic matching.
+      The automatic matching tries to match by email and username when custom mapping fails.
+      Used specifically during Slack user lookup for @mentions and avatars in notifications.
+      Example: "octocat:slackcat,user1:slack1" would map GitHub username "octocat" to Slack username "slackcat".
+    default: ""
   with-test-data:
     description: Append some test data to the Slack post.
     required: false

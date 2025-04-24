@@ -13,7 +13,7 @@ import type { Pull } from './utils/github/structures.js'
 import { PullState, RepositoryType } from './utils/github/structures.js'
 import { getFirstBlocks, getLastBlocks, getPullBlocks } from './utils/slack/blocks.js'
 import { SlackClient } from './utils/slack/client.js'
-import { getApprovedPullRequest } from './utils/test-data.js'
+import { getApprovedPullRequest, getChangesRequestedPullRequest } from './utils/test-data.js'
 import { parseInputs as getInputs } from './input-parser.js'
 
 const { homepage, name, version } = pkg
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
 
 					const org = await client.getOrg()
 					const pulls = await client.getPulls({ repositories, state: PullState.Open, withDrafts })
-					console.log(`Found ${pulls.length} pulls for ${org.name}`)
+					console.log(`Found [${pulls.length}] pulls for [${org.name}]`)
 
 					return [...acc, { client, org: org.name, pulls }]
 				} catch (error: unknown) {
@@ -73,13 +73,12 @@ async function main(): Promise<void> {
 			throw new Error('All GitHub tokens failed to process')
 		}
 
-		console.log(`Successfully processed ${results.length} out of ${githubConfig.tokens.length} tokens`)
+		console.log(`Successfully processed [${results.length}] out of [${githubConfig.tokens.length}] tokens`)
 
 		await slack.enforceAppNamePattern(/.*github[\s-_]?notifier$/i)
 
 		const pulls: Pull[] = results.flatMap((result) => result.pulls)
-		console.log(`Found ${pulls.length} pulls`)
-		console.log(pulls)
+		console.log(`Found [${pulls.length}] pulls`)
 
 		// Multiple tokens may have overlapping repository access, deduplicate PRs by org/repo/number
 		const dedupedPulls = [...new Map(pulls.map((pull) => [`${pull.org}/${pull.repo}/${pull.number}`, pull]))].map(
@@ -89,19 +88,21 @@ async function main(): Promise<void> {
 
 		let blocks: KnownBlock[] = []
 		for (const pull of dedupedPulls) {
-			console.log(`Building Slack blocks from pull request [${pull.number}]`)
+			debug(`Building Slack blocks from pull request [${pull.number}]`)
 
 			blocks = [...blocks, ...(await getPullBlocks(pull, slack, withUserMentions))]
 		}
 
 		if (withTestData) {
-			console.log(`With test data: [${withTestData}]`)
-			const testDataPullRequest = getApprovedPullRequest()
+			debug(`With test data [${withTestData}]`)
+			const test1 = getApprovedPullRequest()
 			for (let i = 1; i <= 2; i++) {
-				blocks = [
-					...blocks,
-					...(await getPullBlocks({ ...testDataPullRequest, number: i }, slack, withUserMentions)),
-				]
+				blocks = [...blocks, ...(await getPullBlocks({ ...test1, number: i }, slack, withUserMentions))]
+			}
+
+			const test2 = getChangesRequestedPullRequest()
+			for (let i = 1; i <= 2; i++) {
+				blocks = [...blocks, ...(await getPullBlocks({ ...test2, number: i }, slack, withUserMentions))]
 			}
 		}
 
@@ -130,8 +131,8 @@ async function main(): Promise<void> {
 		]
 
 		await slack.postMessage(header, blocks)
-	} catch (err) {
-		console.error('Fatal error:', err)
+	} catch (error) {
+		console.error(`Fatal error [${error}]`)
 		process.exit(1)
 	}
 }
