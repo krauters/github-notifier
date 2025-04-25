@@ -1,4 +1,5 @@
 import { debug } from '@actions/core'
+import { plural } from '@krauters/utils'
 import type { Member } from '@slack/web-api/dist/types/response/UsersListResponse.js'
 
 import type { UserMapping } from './structures.js'
@@ -120,7 +121,9 @@ export const logFailedMatches = (
 	{ email, userId, userMappings = [], username }: MatchParams,
 	usersCount: number,
 ): void => {
-	console.log(`No user match found after checking against [${usersCount}] users`)
+	console.log(
+		`No user match found for [${username}] after checking against [${usersCount}] Slack ${plural('user', usersCount)}`,
+	)
 
 	// Log mapping failures
 	if (username && userMappings.length > 0) {

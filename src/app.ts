@@ -23,7 +23,8 @@ const { homepage, name, version } = pkg
  */
 async function main(): Promise<void> {
 	try {
-		debug('Starting main...')
+		console.log(`Starting GitHub Notifier version [${version}]...`)
+
 		const {
 			githubConfig,
 			repositoryFilter,
@@ -55,7 +56,7 @@ async function main(): Promise<void> {
 
 					const org = await client.getOrg()
 					const pulls = await client.getPulls({ repositories, state: PullState.Open, withDrafts })
-					console.log(`Found [${pulls.length}] pulls for [${org.name}]`)
+					console.log(`Found [${pulls.length}] ${plural('pull', pulls.length)} for [${org.name}]`)
 
 					return [...acc, { client, org: org.name, pulls }]
 				} catch (error: unknown) {
@@ -85,6 +86,7 @@ async function main(): Promise<void> {
 			// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars
 			([_, pull]) => pull,
 		)
+		console.log(`After deduplication, there are [${dedupedPulls.length}] unique pulls`)
 
 		let blocks: KnownBlock[] = []
 		for (const pull of dedupedPulls) {
@@ -130,7 +132,11 @@ async function main(): Promise<void> {
 			),
 		]
 
+		console.log(
+			`Posting [${blocks.length}] Slack blocks to [${slack.channels.length}] ${plural('channel', slack.channels.length)}`,
+		)
 		await slack.postMessage(header, blocks)
+		console.log('Successfully posted notification to Slack')
 	} catch (error) {
 		console.error(`Fatal error [${error}]`)
 		process.exit(1)

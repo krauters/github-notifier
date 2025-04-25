@@ -5,7 +5,7 @@ import type { Member } from '@slack/web-api/dist/types/response/UsersListRespons
 import type { User } from '@slack/web-api/dist/types/response/UsersLookupByEmailResponse.js'
 
 import { debug } from '@actions/core'
-import { getBatches } from '@krauters/utils'
+import { getBatches, plural } from '@krauters/utils'
 import { WebClient } from '@slack/web-api'
 
 import { type GetUser, SlackAppUrl, type SlackConfig, type UserMapping } from './structures.js'
@@ -13,7 +13,7 @@ import { createUserMatchers, logFailedMatches, type MatchParams } from './user-m
 
 export class SlackClient {
 	public bot?: Bot
-	private channels: string[]
+	public channels: string[]
 	private client: WebClient
 	private userMappings: UserMapping[]
 	private users: undefined | User[]
@@ -29,6 +29,9 @@ export class SlackClient {
 		this.client = new WebClient(token)
 		this.channels = channels
 		this.userMappings = userMappings
+		console.log(
+			`Slack client initialized with [${channels.length}] ${plural('channel', channels.length)} and [${userMappings.length}] user ${plural('mapping', userMappings.length)}`,
+		)
 	}
 
 	/**
@@ -50,6 +53,7 @@ export class SlackClient {
 		}
 
 		this.bot = info.bot
+		console.log(`Verified Slack app name: [${name}]`)
 	}
 
 	/**
@@ -59,6 +63,7 @@ export class SlackClient {
 		this.users = []
 		let cursor: string | undefined
 		console.log('Getting all Slack users...')
+		const startTime = Date.now()
 		try {
 			// Keep paginating until no more cursor is returned
 			do {
@@ -70,7 +75,10 @@ export class SlackClient {
 				debug(`Got [${result.members?.length}] users from Slack`)
 			} while (cursor)
 
-			console.log(`Got a total of [${this.users.length}] active users from Slack`)
+			const duration = (Date.now() - startTime) / 1000
+			console.log(
+				`Got a total of [${this.users.length}] active ${plural('user', this.users.length)} from Slack in [${duration.toFixed(2)}] seconds`,
+			)
 
 			return this.users
 		} catch (error) {
@@ -85,6 +93,7 @@ export class SlackClient {
 	 */
 	async getBotInfo(): Promise<BotsInfoResponse> {
 		try {
+			console.log('Getting Slack bot information...')
 			const authResponse = await this.client.auth.test({})
 			const response = await this.client.bots.info({ bot: authResponse.bot_id })
 
@@ -145,10 +154,17 @@ export class SlackClient {
 	 * @param [channels=this.channels] Channels to post to.
 	 */
 	async postMessage(text: string, blocks: Block[], channels = this.channels): Promise<void> {
+		const startTime = Date.now()
+		const totalBlocks = blocks.length
+		const batches = getBatches(blocks)
+		debug(`Preparing to post [${totalBlocks}] blocks to [${channels.length}] channels`)
+
 		for (const channel of channels) {
 			let batchNumber = 0
-			for (const batch of getBatches(blocks)) {
-				console.log(`Posting batch [${batchNumber++}] to Slack channel [${channel}]...`)
+			for (const batch of batches) {
+				batchNumber++
+				const batchStartTime = Date.now()
+				debug(`Posting batch [${batchNumber}] to Slack channel [${channel}]...`)
 				const payload = {
 					blocks: batch.items,
 					channel,
@@ -164,10 +180,13 @@ export class SlackClient {
 				debug(JSON.stringify(payload, null, 2))
 				const response = await this.client.chat.postMessage(payload)
 				debug(JSON.stringify(response, null, 2))
+				const batchDuration = (Date.now() - batchStartTime) / 1000
 				console.log(
-					`Posted batch [${batchNumber++}] to Slack channel [${channel}] with success [${response.ok}]`,
+					`Posted batch [${batchNumber}] to Slack channel [${channel}] with success [${response.ok}] in [${batchDuration.toFixed(2)}] seconds`,
 				)
 			}
 		}
+		const totalDuration = (Date.now() - startTime) / 1000
+		console.log(`Completed posting all messages to Slack in [${totalDuration.toFixed(2)}] seconds`)
 	}
 }
