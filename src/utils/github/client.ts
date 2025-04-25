@@ -27,7 +27,7 @@ import {
 	reviewText,
 } from './structures.js'
 import { debug } from '@actions/core'
-import { average, getHoursAgo, minutesBetweenDates, snapDate, SnapType } from '@krauters/utils'
+import { average, getHoursAgo, minutesBetweenDates, plural, snapDate, SnapType } from '@krauters/utils'
 import { ignoreFilenamesForChanges } from '../../constants.js'
 import { getRelativeHumanReadableAge } from '../misc.js'
 
@@ -101,7 +101,7 @@ export class GitHubClient {
 	 */
 	async getOrg(): Promise<Organization> {
 		if (!this.cacheOrganization) {
-			console.log(`Getting organization associated with current token...`)
+			debug(`Getting organization associated with current token...`)
 			const { data } = await this.client.rest.orgs.listMembershipsForAuthenticatedUser()
 
 			if (data.length > 1) {
@@ -205,17 +205,19 @@ export class GitHubClient {
 		withFilesAndChanges = true,
 		withUser = true,
 	}: GetPullsProps): Promise<Pull[]> {
+		const startTime = Date.now()
 		const org = await this.getOrgName()
-		console.log('\n')
 		if (state === PullState.Open) {
-			console.log(`Getting [${state}] pulls in org [${org}]...`)
+			debug(`Getting [${state}] ${plural('pull', 2)} in org [${org}]...`)
 		} else {
-			console.log(`Getting [${state}] pulls in org [${org}] that are newer than [${oldest}...`)
+			debug(`Getting [${state}] ${plural('pull', 2)} in org [${org}] that are newer than [${oldest}]...`)
 		}
 
 		const pullRequests = []
+		let apiRequestCount = 0
 		for (const repo of repositories) {
 			debug(`Getting [${state}] pulls in repository [${repo.name}]...`)
+			const repoStartTime = Date.now()
 			const pulls = await this.client.paginate(
 				this.client.rest.pulls.list,
 				{
@@ -224,6 +226,7 @@ export class GitHubClient {
 					state,
 				},
 				(response, done) => {
+					apiRequestCount++
 					debug(
 						`Paginated response for repository [${repo.name}], status [${response.status}], items [${response.data.length}]`,
 					)
@@ -237,7 +240,8 @@ export class GitHubClient {
 				},
 			)
 
-			console.log(`Found [${pulls.length}] pull in repository [${repo.name}]`)
+			const repoDuration = (Date.now() - repoStartTime) / 1000
+			debug(`Found [${pulls.length}] pull in repository [${repo.name}] in [${repoDuration.toFixed(2)}] seconds`)
 			for (const pull of pulls) {
 				const { base, closed_at, created_at, draft, html_url, merged_at, number, title, user } = pull
 				debug(`Processing pull [${number}]...`)
@@ -286,6 +290,11 @@ export class GitHubClient {
 			}
 		}
 
+		const totalDuration = (Date.now() - startTime) / 1000
+		console.log(
+			`Completed processing [${pullRequests.length}] pull requests in [${totalDuration.toFixed(2)}] seconds with [${apiRequestCount}] API calls`,
+		)
+
 		return pullRequests
 	}
 
@@ -301,7 +310,7 @@ export class GitHubClient {
 		withPublic,
 	}: GetRepositoriesProps): Promise<GitHubRepositories> {
 		const org = await this.getOrgName()
-		console.log(`Getting all repositories in org [${org}]...`)
+		debug(`Getting all repositories in org [${org}]...`)
 		const response = await this.client.paginate(this.client.rest.repos.listForOrg, {
 			org,
 			per_page: 100,
@@ -317,7 +326,7 @@ export class GitHubClient {
 		if (!withPublic) {
 			filteredRepos = filteredRepos.filter((repo: GitHubRepository) => repo.visibility !== RepositoryType.Public)
 		}
-		console.log(`Found [${filteredRepos.length}] repositories`)
+		debug(`Found [${filteredRepos.length}] repositories in org [${org}]`)
 		debug(
 			JSON.stringify(
 				filteredRepos.map((repo) => repo.name),

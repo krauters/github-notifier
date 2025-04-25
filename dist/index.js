@@ -80770,7 +80770,7 @@ const { /* homepage */ "TB": homepage, /* name */ "UU": name, /* version */ "rE"
  */
 async function main() {
     try {
-        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)('Starting main...');
+        console.log(`Starting GitHub Notifier version [${version}]...`);
         const { githubConfig, repositoryFilter, slackConfig, withArchived, withDrafts, withPublic, withTestData, withUserMentions, } = (0,_input_parser_js__WEBPACK_IMPORTED_MODULE_10__/* .parseInputs */ .T)();
         const slack = new _utils_slack_client_js__WEBPACK_IMPORTED_MODULE_8__/* .SlackClient */ .Q(slackConfig);
         const results = await githubConfig.tokens.reduce(async (accPromise, token) => {
@@ -80789,7 +80789,7 @@ async function main() {
                 });
                 const org = await client.getOrg();
                 const pulls = await client.getPulls({ repositories, state: _utils_github_structures_js__WEBPACK_IMPORTED_MODULE_6__/* .PullState */ .lT.Open, withDrafts });
-                console.log(`Found [${pulls.length}] pulls for [${org.name}]`);
+                console.log(`Found [${pulls.length}] ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.plural)('pull', pulls.length)} for [${org.name}]`);
                 return [...acc, { client, org: org.name, pulls }];
             }
             catch (error) {
@@ -80808,6 +80808,7 @@ async function main() {
         const dedupedPulls = [...new Map(pulls.map((pull) => [`${pull.org}/${pull.repo}/${pull.number}`, pull]))].map(
         // eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars
         ([_, pull]) => pull);
+        console.log(`After deduplication, there are [${dedupedPulls.length}] unique pulls`);
         let blocks = [];
         for (const pull of dedupedPulls) {
             (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Building Slack blocks from pull request [${pull.number}]`);
@@ -80842,7 +80843,9 @@ async function main() {
                 `/${_actions_github__WEBPACK_IMPORTED_MODULE_0__.context.payload.repository?.name}> (<${_constants_js__WEBPACK_IMPORTED_MODULE_4__/* .workflowLogsUrl */ .GM}|logs>) using <${homepage}|${name}>@<${homepage}/releases/tag/${version}|${version}>`,
             ].join('')),
         ];
+        console.log(`Posting [${blocks.length}] Slack blocks to [${slack.channels.length}] ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.plural)('channel', slack.channels.length)}`);
         await slack.postMessage(header, blocks);
+        console.log('Successfully posted notification to Slack');
     }
     catch (error) {
         console.error(`Fatal error [${error}]`);
@@ -81022,7 +81025,7 @@ class GitHubClient {
      */
     async getOrg() {
         if (!this.cacheOrganization) {
-            console.log(`Getting organization associated with current token...`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting organization associated with current token...`);
             const { data } = await this.client.rest.orgs.listMembershipsForAuthenticatedUser();
             if (data.length > 1) {
                 console.error(data);
@@ -81092,22 +81095,25 @@ class GitHubClient {
      * @param props Configuration for retrieving pull requests.
      */
     async getPulls({ oldest = (0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.snapDate)(new Date(), { months: -36, snap: _krauters_utils__WEBPACK_IMPORTED_MODULE_2__.SnapType.Month }), onlyGhReviews = false, repositories, state = _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.All, withCommits = true, withDrafts, withFilesAndChanges = true, withUser = true, }) {
+        const startTime = Date.now();
         const org = await this.getOrgName();
-        console.log('\n');
         if (state === _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.Open) {
-            console.log(`Getting [${state}] pulls in org [${org}]...`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting [${state}] ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.plural)('pull', 2)} in org [${org}]...`);
         }
         else {
-            console.log(`Getting [${state}] pulls in org [${org}] that are newer than [${oldest}...`);
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting [${state}] ${(0,_krauters_utils__WEBPACK_IMPORTED_MODULE_2__.plural)('pull', 2)} in org [${org}] that are newer than [${oldest}]...`);
         }
         const pullRequests = [];
+        let apiRequestCount = 0;
         for (const repo of repositories) {
             (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting [${state}] pulls in repository [${repo.name}]...`);
+            const repoStartTime = Date.now();
             const pulls = await this.client.paginate(this.client.rest.pulls.list, {
                 owner: org,
                 repo: repo.name,
                 state,
             }, (response, done) => {
+                apiRequestCount++;
                 (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Paginated response for repository [${repo.name}], status [${response.status}], items [${response.data.length}]`);
                 const found = response.data.find((pull) => new Date(pull.created_at) < oldest);
                 if (found && state !== _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .PullState */ .lT.Open) {
@@ -81116,7 +81122,8 @@ class GitHubClient {
                 }
                 return response.data.filter((pull) => new Date(pull.created_at) > oldest);
             });
-            console.log(`Found [${pulls.length}] pull in repository [${repo.name}]`);
+            const repoDuration = (Date.now() - repoStartTime) / 1000;
+            (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Found [${pulls.length}] pull in repository [${repo.name}] in [${repoDuration.toFixed(2)}] seconds`);
             for (const pull of pulls) {
                 const { base, closed_at, created_at, draft, html_url, merged_at, number, title, user } = pull;
                 (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Processing pull [${number}]...`);
@@ -81155,6 +81162,8 @@ class GitHubClient {
                 (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Added pull [${number}] to response`);
             }
         }
+        const totalDuration = (Date.now() - startTime) / 1000;
+        console.log(`Completed processing [${pullRequests.length}] pull requests in [${totalDuration.toFixed(2)}] seconds with [${apiRequestCount}] API calls`);
         return pullRequests;
     }
     /**
@@ -81164,7 +81173,7 @@ class GitHubClient {
      */
     async getRepositories({ repositoryFilter = [], type = _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .RepositoryType */ .vJ.All, withArchived, withPublic, }) {
         const org = await this.getOrgName();
-        console.log(`Getting all repositories in org [${org}]...`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Getting all repositories in org [${org}]...`);
         const response = await this.client.paginate(this.client.rest.repos.listForOrg, {
             org,
             per_page: 100,
@@ -81180,7 +81189,7 @@ class GitHubClient {
         if (!withPublic) {
             filteredRepos = filteredRepos.filter((repo) => repo.visibility !== _structures_js__WEBPACK_IMPORTED_MODULE_0__/* .RepositoryType */ .vJ.Public);
         }
-        console.log(`Found [${filteredRepos.length}] repositories`);
+        (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(`Found [${filteredRepos.length}] repositories in org [${org}]`);
         (0,_actions_core__WEBPACK_IMPORTED_MODULE_1__.debug)(JSON.stringify(filteredRepos.map((repo) => repo.name), null, 2));
         return filteredRepos;
     }
@@ -81707,6 +81716,7 @@ var SlackAppUrl;
 
 ;// CONCATENATED MODULE: ./src/utils/slack/user-matchers.ts
 
+
 function customMappingMatcher(githubUsername, slackUsername) {
     return {
         check: (user) => user.name === slackUsername ||
@@ -81791,7 +81801,7 @@ const createUserMatchers = ({ email, userId, userMappings = [], username }) => {
     return matchers;
 };
 const logFailedMatches = ({ email, userId, userMappings = [], username }, usersCount) => {
-    console.log(`No user match found after checking against [${usersCount}] users`);
+    console.log(`No user match found for [${username}] after checking against [${usersCount}] Slack ${(0,src.plural)('user', usersCount)}`);
     // Log mapping failures
     if (username && userMappings.length > 0) {
         const matchingMappings = userMappings.filter((mapping) => mapping.githubUsername === username);
@@ -81832,6 +81842,7 @@ class SlackClient {
         this.client = new dist.WebClient(token);
         this.channels = channels;
         this.userMappings = userMappings;
+        console.log(`Slack client initialized with [${channels.length}] ${(0,src.plural)('channel', channels.length)} and [${userMappings.length}] user ${(0,src.plural)('mapping', userMappings.length)}`);
     }
     /**
      * Ensure app name pattern.
@@ -81848,6 +81859,7 @@ class SlackClient {
             throw new Error(`Current app name [${name}] does not match the desired pattern [${pattern}]. Please update Slack app "Basic Information" > "Display Information" > "App name" to have the suffix "GitHub Notifier". Slack app url [${SlackAppUrl.Prefix}/${info?.bot?.app_id}/${SlackAppUrl.SuffixDisplayInfo}].`);
         }
         this.bot = info.bot;
+        console.log(`Verified Slack app name: [${name}]`);
     }
     /**
      * Get all Slack users.
@@ -81856,6 +81868,7 @@ class SlackClient {
         this.users = [];
         let cursor;
         console.log('Getting all Slack users...');
+        const startTime = Date.now();
         try {
             // Keep paginating until no more cursor is returned
             do {
@@ -81866,7 +81879,8 @@ class SlackClient {
                 cursor = result.response_metadata?.next_cursor;
                 (0,core.debug)(`Got [${result.members?.length}] users from Slack`);
             } while (cursor);
-            console.log(`Got a total of [${this.users.length}] active users from Slack`);
+            const duration = (Date.now() - startTime) / 1000;
+            console.log(`Got a total of [${this.users.length}] active ${(0,src.plural)('user', this.users.length)} from Slack in [${duration.toFixed(2)}] seconds`);
             return this.users;
         }
         catch (error) {
@@ -81879,6 +81893,7 @@ class SlackClient {
      */
     async getBotInfo() {
         try {
+            console.log('Getting Slack bot information...');
             const authResponse = await this.client.auth.test({});
             const response = await this.client.bots.info({ bot: authResponse.bot_id });
             if (!response.ok) {
@@ -81928,10 +81943,16 @@ class SlackClient {
      * @param [channels=this.channels] Channels to post to.
      */
     async postMessage(text, blocks, channels = this.channels) {
+        const startTime = Date.now();
+        const totalBlocks = blocks.length;
+        const batches = (0,src.getBatches)(blocks);
+        (0,core.debug)(`Preparing to post [${totalBlocks}] blocks to [${channels.length}] channels`);
         for (const channel of channels) {
             let batchNumber = 0;
-            for (const batch of (0,src.getBatches)(blocks)) {
-                console.log(`Posting batch [${batchNumber++}] to Slack channel [${channel}]...`);
+            for (const batch of batches) {
+                batchNumber++;
+                const batchStartTime = Date.now();
+                (0,core.debug)(`Posting batch [${batchNumber}] to Slack channel [${channel}]...`);
                 const payload = {
                     blocks: batch.items,
                     channel,
@@ -81945,9 +81966,12 @@ class SlackClient {
                 (0,core.debug)(JSON.stringify(payload, null, 2));
                 const response = await this.client.chat.postMessage(payload);
                 (0,core.debug)(JSON.stringify(response, null, 2));
-                console.log(`Posted batch [${batchNumber++}] to Slack channel [${channel}] with success [${response.ok}]`);
+                const batchDuration = (Date.now() - batchStartTime) / 1000;
+                console.log(`Posted batch [${batchNumber}] to Slack channel [${channel}] with success [${response.ok}] in [${batchDuration.toFixed(2)}] seconds`);
             }
         }
+        const totalDuration = (Date.now() - startTime) / 1000;
+        console.log(`Completed posting all messages to Slack in [${totalDuration.toFixed(2)}] seconds`);
     }
 }
 
@@ -90605,7 +90629,7 @@ module.exports = {"version":"3.17.0"};
 /***/ 8330:
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.3.0","TB":"https://buymeacoffee.com/coltenkrauter"}');
+module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.3.1","TB":"https://buymeacoffee.com/coltenkrauter"}');
 
 /***/ })
 
