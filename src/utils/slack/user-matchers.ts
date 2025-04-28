@@ -20,9 +20,9 @@ export interface UserMatcher {
 function customMappingMatcher(githubUsername: string, slackUsername: string): UserMatcher {
 	return {
 		check: (user: Member) =>
-			user.name === slackUsername ||
-			user.profile?.display_name === slackUsername ||
-			user.profile?.real_name === slackUsername,
+			user.name?.toLowerCase() === slackUsername.toLowerCase() ||
+			user.profile?.display_name?.toLowerCase() === slackUsername.toLowerCase() ||
+			user.profile?.real_name?.toLowerCase() === slackUsername.toLowerCase(),
 		description: 'custom user mapping',
 		log: (user: Member) => {
 			debug(
@@ -34,7 +34,7 @@ function customMappingMatcher(githubUsername: string, slackUsername: string): Us
 
 function displayNameMatcher(username: string): UserMatcher {
 	return {
-		check: (user: Member) => user.profile?.display_name === username,
+		check: (user: Member) => user.profile?.display_name?.toLowerCase() === username.toLowerCase(),
 		description: 'user.profile.display_name fields',
 		log: (user: Member) => {
 			debug(`Match found by username [${username}] matching Slack displayName [${user.profile?.display_name}]`)
@@ -44,7 +44,10 @@ function displayNameMatcher(username: string): UserMatcher {
 
 function emailContainsMatcher(username: string): UserMatcher {
 	return {
-		check: (user: Member) => String(user.profile?.email ?? '').includes(username),
+		check: (user: Member) =>
+			String(user.profile?.email ?? '')
+				.toLowerCase()
+				.includes(username.toLowerCase()),
 		description: 'user.profile.email contains check',
 		log: (user: Member) => {
 			debug(`Match found by username [${username}] contained in Slack email [${user.profile?.email}]`)
@@ -54,7 +57,7 @@ function emailContainsMatcher(username: string): UserMatcher {
 
 function emailMatcher(email: string): UserMatcher {
 	return {
-		check: (user: Member) => user.profile?.email === email,
+		check: (user: Member) => user.profile?.email?.toLowerCase() === email.toLowerCase(),
 		description: 'user.profile.email fields',
 		log: (user: Member) => {
 			debug(`Match found by email [${email}] with Slack email [${user.profile?.email}]`)
@@ -64,7 +67,7 @@ function emailMatcher(email: string): UserMatcher {
 
 function realNameMatcher(username: string): UserMatcher {
 	return {
-		check: (user: Member) => user.profile?.real_name === username,
+		check: (user: Member) => user.profile?.real_name?.toLowerCase() === username.toLowerCase(),
 		description: 'user.profile.real_name fields',
 		log: (user: Member) => {
 			debug(`Match found by username [${username}] matching Slack realName [${user.profile?.real_name}]`)

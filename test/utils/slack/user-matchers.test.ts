@@ -76,6 +76,23 @@ describe('user-matchers', () => {
 			expect(matchers[0].check(userNoMatch)).toBe(false)
 		})
 
+		it('should match case-insensitively by email when provided', () => {
+			const params: MatchParams = { email: 'test@example.com' }
+			const matchers = createUserMatchers(params)
+
+			const userMatch: Member = {
+				profile: { email: 'TEST@EXAMPLE.COM' },
+			} as Member
+			const userNoMatch: Member = {
+				profile: { email: 'other@example.com' },
+			} as Member
+
+			// Test the email matcher with case differences
+			expect(matchers.length).toBe(1)
+			expect(matchers[0].check(userMatch)).toBe(true)
+			expect(matchers[0].check(userNoMatch)).toBe(false)
+		})
+
 		it('should match by username in email when provided', () => {
 			const params: MatchParams = { username: 'testuser' }
 			const matchers = createUserMatchers(params)
@@ -88,6 +105,22 @@ describe('user-matchers', () => {
 			} as Member
 
 			// Test the username in email matcher (first of username matchers)
+			expect(matchers[0].check(userMatch)).toBe(true)
+			expect(matchers[0].check(userNoMatch)).toBe(false)
+		})
+
+		it('should match case-insensitively by username in email when provided', () => {
+			const params: MatchParams = { username: 'testuser' }
+			const matchers = createUserMatchers(params)
+
+			const userMatch: Member = {
+				profile: { email: 'TESTUSER@example.com' },
+			} as Member
+			const userNoMatch: Member = {
+				profile: { email: 'other@example.com' },
+			} as Member
+
+			// Test the username in email matcher with case differences
 			expect(matchers[0].check(userMatch)).toBe(true)
 			expect(matchers[0].check(userNoMatch)).toBe(false)
 		})
@@ -108,6 +141,22 @@ describe('user-matchers', () => {
 			expect(matchers[1].check(userNoMatch)).toBe(false)
 		})
 
+		it('should match case-insensitively by display_name when username provided', () => {
+			const params: MatchParams = { username: 'displayuser' }
+			const matchers = createUserMatchers(params)
+
+			const userMatch: Member = {
+				profile: { display_name: 'DISPLAYUSER' },
+			} as Member
+			const userNoMatch: Member = {
+				profile: { display_name: 'otherdisplay' },
+			} as Member
+
+			// Test the display_name matcher with case differences
+			expect(matchers[1].check(userMatch)).toBe(true)
+			expect(matchers[1].check(userNoMatch)).toBe(false)
+		})
+
 		it('should match by real_name when username provided', () => {
 			const params: MatchParams = { username: 'Real User' }
 			const matchers = createUserMatchers(params)
@@ -120,6 +169,22 @@ describe('user-matchers', () => {
 			} as Member
 
 			// Test the real_name matcher (third of username matchers)
+			expect(matchers[2].check(userMatch)).toBe(true)
+			expect(matchers[2].check(userNoMatch)).toBe(false)
+		})
+
+		it('should match case-insensitively by real_name when username provided', () => {
+			const params: MatchParams = { username: 'Real User' }
+			const matchers = createUserMatchers(params)
+
+			const userMatch: Member = {
+				profile: { real_name: 'real user' },
+			} as Member
+			const userNoMatch: Member = {
+				profile: { real_name: 'Other Person' },
+			} as Member
+
+			// Test the real_name matcher with case differences
 			expect(matchers[2].check(userMatch)).toBe(true)
 			expect(matchers[2].check(userNoMatch)).toBe(false)
 		})
@@ -191,6 +256,19 @@ describe('user-matchers', () => {
 			} as Member
 
 			// Test the mapping matcher (now at index 0)
+			expect(matchers[0].check(userMatch)).toBe(true)
+			expect(matchers[0].check(userNoMatch)).toBe(false)
+		})
+
+		it('should match case-insensitively through user mapping', () => {
+			const userMappings: UserMapping[] = [{ githubUsername: 'github-user', slackUsername: 'slack-name' }]
+			const params: MatchParams = { userMappings, username: 'github-user' }
+			const matchers = createUserMatchers(params)
+
+			const userMatch: Member = { name: 'SLACK-NAME' } as Member
+			const userNoMatch: Member = { name: 'other-name' } as Member
+
+			// Test the mapping matcher with case differences
 			expect(matchers[0].check(userMatch)).toBe(true)
 			expect(matchers[0].check(userNoMatch)).toBe(false)
 		})

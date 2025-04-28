@@ -81719,9 +81719,9 @@ var SlackAppUrl;
 
 function customMappingMatcher(githubUsername, slackUsername) {
     return {
-        check: (user) => user.name === slackUsername ||
-            user.profile?.display_name === slackUsername ||
-            user.profile?.real_name === slackUsername,
+        check: (user) => user.name?.toLowerCase() === slackUsername.toLowerCase() ||
+            user.profile?.display_name?.toLowerCase() === slackUsername.toLowerCase() ||
+            user.profile?.real_name?.toLowerCase() === slackUsername.toLowerCase(),
         description: 'custom user mapping',
         log: (user) => {
             (0,core.debug)(`Match found by custom mapping: GitHub username [${githubUsername}] to Slack username [${slackUsername}] for user [${user.id}]`);
@@ -81730,7 +81730,7 @@ function customMappingMatcher(githubUsername, slackUsername) {
 }
 function displayNameMatcher(username) {
     return {
-        check: (user) => user.profile?.display_name === username,
+        check: (user) => user.profile?.display_name?.toLowerCase() === username.toLowerCase(),
         description: 'user.profile.display_name fields',
         log: (user) => {
             (0,core.debug)(`Match found by username [${username}] matching Slack displayName [${user.profile?.display_name}]`);
@@ -81739,7 +81739,9 @@ function displayNameMatcher(username) {
 }
 function emailContainsMatcher(username) {
     return {
-        check: (user) => String(user.profile?.email ?? '').includes(username),
+        check: (user) => String(user.profile?.email ?? '')
+            .toLowerCase()
+            .includes(username.toLowerCase()),
         description: 'user.profile.email contains check',
         log: (user) => {
             (0,core.debug)(`Match found by username [${username}] contained in Slack email [${user.profile?.email}]`);
@@ -81748,7 +81750,7 @@ function emailContainsMatcher(username) {
 }
 function emailMatcher(email) {
     return {
-        check: (user) => user.profile?.email === email,
+        check: (user) => user.profile?.email?.toLowerCase() === email.toLowerCase(),
         description: 'user.profile.email fields',
         log: (user) => {
             (0,core.debug)(`Match found by email [${email}] with Slack email [${user.profile?.email}]`);
@@ -81757,7 +81759,7 @@ function emailMatcher(email) {
 }
 function realNameMatcher(username) {
     return {
-        check: (user) => user.profile?.real_name === username,
+        check: (user) => user.profile?.real_name?.toLowerCase() === username.toLowerCase(),
         description: 'user.profile.real_name fields',
         log: (user) => {
             (0,core.debug)(`Match found by username [${username}] matching Slack realName [${user.profile?.real_name}]`);
@@ -90629,7 +90631,7 @@ module.exports = {"version":"3.17.0"};
 /***/ 8330:
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.3.1","TB":"https://buymeacoffee.com/coltenkrauter"}');
+module.exports = /*#__PURE__*/JSON.parse('{"UU":"@krauters/github-notifier","rE":"1.3.2","TB":"https://buymeacoffee.com/coltenkrauter"}');
 
 /***/ })
 
